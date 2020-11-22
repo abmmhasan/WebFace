@@ -1,0 +1,22 @@
+{
+  "name": "abmmhasan/webface",
+  "description": "Web Route, Controllers and Support",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "abmmhasan",
+      "email": "abmmhasan346@gmail.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "AbmmHasan\\WebFace\\": "src/"
+    }
+  },
+  "minimum-stability": "stable",
+  "require": {
+    "php": ">=7.1",
+    "abmmhasan/di-container": "^1.06"
+  }
+}
