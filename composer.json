@@ -14,7 +14,7 @@
       "AbmmHasan\\WebFace\\": "src/"
     }
   },
-  "minimum-stability": "stable",
+  "minimum-stability": "dev",
   "require": {
     "php": ">=7.1",
     "abmmhasan/di-container": "^1.06"
