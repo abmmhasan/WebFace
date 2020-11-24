@@ -153,7 +153,7 @@ final class Router extends BaseRequest
      * @param null $callback
      * @return bool
      */
-    public function run($callback)
+    public function run($flash = true)
     {
         $this->runMiddleware($this->middleware['before'] ?? []);
         // Handle all routes
@@ -175,20 +175,15 @@ final class Router extends BaseRequest
 
         // If no route was handled, trigger the 404 (if any)
         if (!$numHandled) {
-            // If it originally was a HEAD request, clean up after ourselves by emptying the output buffer
-            if ($_SERVER['REQUEST_METHOD'] == 'HEAD') {
-                ob_end_clean();
-            }
             $this->thrownResponse['code'] = 404;
-        } else {
-            // If it originally was a HEAD request, clean up after ourselves by emptying the output buffer
-            if ($_SERVER['REQUEST_METHOD'] == 'HEAD') {
-                ob_end_clean();
-            }
+        }
+        // If it originally was a HEAD request, clean up after ourselves by emptying the output buffer
+        if ($_SERVER['REQUEST_METHOD'] == 'HEAD') {
+            ob_end_clean();
         }
         $this->runMiddleware($this->middleware['after'] ?? []);
-        if (is_callable($callback)) {
-            $callback();
+        if ($flash) {
+            responseFlush();
         }
         return true;
     }
@@ -361,11 +356,11 @@ final class Router extends BaseRequest
             return true;
         }
         $eligible = true;
-        if (is_array($inOperation) && count($inOperation)) {
-            foreach ($middlewares as $middleware) {
+        if (is_array($collection) && count($collection)) {
+            foreach ($check as $middleware) {
                 $parameterSeparation = explode(':', $middleware, 2);
-                if (isset($inOperation[$parameterSeparation[0]])) {
-                    $eligible = $this->invokeMiddleware($inOperation[$parameterSeparation[0]], $parameterSeparation[1] ?? '');
+                if (isset($collection[$parameterSeparation[0]])) {
+                    $eligible = $this->invokeMiddleware($collection[$parameterSeparation[0]], $parameterSeparation[1] ?? '');
                     if (!is_bool($eligible) || $eligible !== true) {
                         $this->thrownResponse['code'] = $eligible['status'] ?? 403;
                         $this->thrownResponse['message'] = $eligible['message'] ?? $eligible;

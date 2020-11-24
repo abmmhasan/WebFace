@@ -157,10 +157,4 @@ final class Response extends BaseResponse
     {
         self::helloWorld();
     }
-    public static function handle()
-    {
-        self::$instance ??= new self('', 200, []);
-        $instance = self::$instance;
-        $instance->helloWorld();
-    }
 }
