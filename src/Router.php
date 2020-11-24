@@ -1,6 +1,6 @@
 <?php
 
-namespace Inspect\Core\Http;
+namespace AbmmHasan\WebFace;
 
 
 use AbmmHasan\WebFace\Base\BaseRequest;
@@ -40,6 +40,9 @@ final class Router extends BaseRequest
      */
     private $middleware = [];
 
+    private $middlewareCall = 'handle';
+    private $middlewareDI = false;
+
     /**
      * @var string[]
      */
@@ -61,18 +64,24 @@ final class Router extends BaseRequest
     /**
      * @var bool
      */
-    public  $cacheLoaded;
+    public $cacheLoaded = false;
 
     /**
      * Router constructor.
      * @param array $settings
      */
-    public function __construct($settings = [])
+    public function __construct($settings = [], $middleware = [])
     {
         parent::__construct();
-        $this->serverBasePath = ($settings['basePath'] ?? $this->url->base);
-        $this->namespace = 'Inspect\App\Http\Controller';
-        $this->cacheLoaded = $this->loadCache();
+        $this->serverBasePath = ($settings['base_path'] ?? $this->url->base);
+        $this->namespace = $settings['base_ns'];
+        $this->middleware = $middleware;
+        if (isset($settings['cache_load']) && $settings['cache_load'] && isset($settings['cache_path'])) {
+            $this->cacheLoaded = $this->loadCache($settings['cache_path']);
+        }
+        if (isset($settings['middleware_di']) && is_bool($settings['middleware_di'])) {
+            $this->middlewareDI = $settings['middleware_di'];
+        }
     }
 
     /**
@@ -144,8 +153,9 @@ final class Router extends BaseRequest
      * @param null $callback
      * @return bool
      */
-    public function run($callback = null)
+    public function run($callback)
     {
+        $this->runMiddleware($this->middleware['before'] ?? []);
         // Handle all routes
         $numHandled = 0;
         if ($this->xhr) {
@@ -165,16 +175,21 @@ final class Router extends BaseRequest
 
         // If no route was handled, trigger the 404 (if any)
         if (!$numHandled) {
-            Response::status(404);
-        } // If a route was handled, perform the finish callback (if any)
-        elseif ($callback && is_callable($callback)) {
+            // If it originally was a HEAD request, clean up after ourselves by emptying the output buffer
+            if ($_SERVER['REQUEST_METHOD'] == 'HEAD') {
+                ob_end_clean();
+            }
+            $this->thrownResponse['code'] = 404;
+        } else {
+            // If it originally was a HEAD request, clean up after ourselves by emptying the output buffer
+            if ($_SERVER['REQUEST_METHOD'] == 'HEAD') {
+                ob_end_clean();
+            }
+        }
+        $this->runMiddleware($this->middleware['after'] ?? []);
+        if (is_callable($callback)) {
             $callback();
         }
-        // If it originally was a HEAD request, clean up after ourselves by emptying the output buffer
-        if ($this->server->REQUEST_METHOD == 'HEAD') {
-            ob_end_clean();
-        }
-        Response::instance()->send();
         return true;
     }
 
@@ -189,10 +204,10 @@ final class Router extends BaseRequest
     /**
      * @return bool
      */
-    private function loadCache()
+    private function loadCache($path)
     {
-        if (env('APP_ENV') !== 'local' && file_exists(BOOTSTRAP_PATH . 'routes.php')) {
-            $this->routes = require(BOOTSTRAP_PATH . 'routes.php');
+        if (file_exists($path)) {
+            $this->routes = require($path);
             return true;
         }
         return false;
@@ -314,15 +329,17 @@ final class Router extends BaseRequest
         $uri = '/' . trim(substr($this->url->path, strlen($this->serverBasePath)), '/');
         // Check if any exact route exist
         if (isset($routes[$uri])) {
-            self::invoke($routes[$uri]['fn'], $routes[$uri]['namespace']);
+            if (!$this->routeMiddlewareCheck($route['before'], $this->middleware['route'])) {
+                return true;
+            }
+            $this->invoke($routes[$uri]['fn'], $routes[$uri]['namespace']);
             return true;
         }
         // Loop all routes to match route pattern
         foreach ($routes as $storedPattern => $route) {
             $pattern = preg_replace('/\/{(.*?)}/', '/(.*?)', $storedPattern);
             if (preg_match_all('#^' . $pattern . '$#', $uri, $matches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER)) {
-                if (!self::executeMiddleware($route['before'])) {
-                    Response::status(403);
+                if (!$this->routeMiddlewareCheck($route['before'], $this->middleware['route'])) {
                     return true;
                 }
                 // Rework matches to only contain the matches, not the original string
@@ -330,27 +347,43 @@ final class Router extends BaseRequest
                 // Binding key value
                 if ($view) {
                     $params = self::mergeKeys($storedPattern, $params);
-                } else {
-                    // Call the handling function with the URL parameters if the desired input is callable
-                    self::invoke($route['fn'], $route['namespace'], $params);
                 }
-                self::executeMiddleware($route['after']);
+                $this->invoke($route['fn'], $route['namespace'], $params, $view);
                 return true;
             }
         }
         return false;
     }
 
-    /**
-     * @param array $middlewares
-     * @return int
-     */
-    private function executeMiddleware(array $middlewares)
+    private function routeMiddlewareCheck($check, $collection)
     {
-        return 1;
-//        foreach($middlewares as $middleware){
-//
-//        }
+        if (empty($check) || empty($collection)) {
+            return true;
+        }
+        $eligible = true;
+        if (is_array($inOperation) && count($inOperation)) {
+            foreach ($middlewares as $middleware) {
+                $parameterSeparation = explode(':', $middleware, 2);
+                if (isset($inOperation[$parameterSeparation[0]])) {
+                    $eligible = $this->invokeMiddleware($inOperation[$parameterSeparation[0]], $parameterSeparation[1] ?? '');
+                    if (!is_bool($eligible) || $eligible !== true) {
+                        $this->thrownResponse['code'] = $eligible['status'] ?? 403;
+                        $this->thrownResponse['message'] = $eligible['message'] ?? $eligible;
+                        return false;
+                    }
+                }
+            }
+        }
+        return $eligible;
+    }
+
+    private function runMiddleware($resource)
+    {
+        if (!empty($resource)) {
+            foreach ($resource as $execute) {
+                $this->invokeMiddleware($execute);
+            }
+        }
     }
 
     /**
@@ -371,18 +404,50 @@ final class Router extends BaseRequest
      * @param string $namespace
      * @param array $params
      */
-    private function invoke($fn, $namespace = '', $params = [])
+    private function invoke($fn, $namespace = '', $params = [], $view = false)
     {
         ob_start();
         if ($fn instanceof \Closure) {
-            initiate($fn, ...$params)->closure();
+            if ($view) {
+                initiate($fn, $params)->closure();
+            } else {
+                initiate($fn, ...$params)->closure();
+            }
         } elseif (strpos($fn, '@') !== false) {
             list($controller, $method) = explode('@', $fn, 2);
             if ($namespace !== '') {
                 $controller = $namespace . '\\' . $controller;
             }
-            initiate($controller)->$method(...$params);
+            if ($view) {
+                initiate($controller)->$method($params);
+            } else {
+                initiate($controller)->$method(...$params);
+            }
         }
         ob_end_clean();
+    }
+
+    /**
+     * @param $fn
+     * @param string $namespace
+     * @param array $params
+     */
+    private function invokeMiddleware($fn, $params = '')
+    {
+        $params = explode(',', $params);
+        if ($fn instanceof \Closure) {
+            $resource = initiate($fn, ...$params);
+            if (!$this->middlewareDI) {
+                $resource->_noInject();
+            }
+            return $resource->closure();
+        } else {
+            $method = $this->middlewareCall;
+            $resource = initiate($fn);
+            if (!$this->middlewareDI) {
+                $resource->_noInject();
+            }
+            return $resource->$method(...$params);
+        }
     }
 }

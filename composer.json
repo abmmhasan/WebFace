@@ -10,13 +10,17 @@
     }
   ],
   "autoload": {
+    "files": [
+      "src/function/functions.php"
+    ],
     "psr-4": {
       "AbmmHasan\\WebFace\\": "src/"
     }
   },
-  "minimum-stability": "stable",
+  "minimum-stability": "dev",
+  "prefer-stable": true,
   "require": {
     "php": ">=7.1",
-    "abmmhasan/di-container": "^1.06"
+    "abmmhasan/di-container": "^1.07"
   }
 }

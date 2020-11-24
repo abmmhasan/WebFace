@@ -104,7 +104,7 @@ final class Headers
         if (self::$content) {
             return self::$content;
         }
-        $parts = explode(';', strtolower($_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE']));
+        $parts = explode(';', strtolower($_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? ''));
         $type = array_shift($parts);
         $charset = null;
         if ($parts) {

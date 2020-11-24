@@ -26,6 +26,7 @@ class BaseRequest
     protected $accept;
     protected $dependencyHeader;
     protected $cookie;
+    protected $thrownResponse;
 
     public function __construct()
     {
@@ -40,7 +41,7 @@ class BaseRequest
         $this->post = new Arrject($_POST);
         $this->query = new Arrject($_GET);
         $this->base = str_replace(['\\', ' '], ['/', '%20'], dirname($_SERVER['SCRIPT_NAME']));
-        $this->client = new Arrject(self::clientInfo());
+        $this->client = new Arrject($this->clientInfo());
         $this->xhr = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest';
     }
 
@@ -71,7 +72,7 @@ class BaseRequest
             'referer' => $_SERVER['HTTP_REFERER'] ?? null,
             'ua' => [
                 'agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
-                'system' => self::userAgentInfo(),
+                'system' => $this->userAgentInfo(),
             ]
         ];
     }

@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Inspect\Core\Http;
+namespace AbmmHasan\WebFace\Base;
 
 
 use ArrayObject;
@@ -79,7 +79,7 @@ class BaseResponse extends BaseRequest
      * @param $headers
      * @throws \Exception
      */
-    protected function __construct($content, $status, $headers)
+    public function __construct($content, $status, $headers)
     {
         parent::__construct();
         $http_data = GetData::http();

@@ -1,8 +1,9 @@
 <?php
 
 
-namespace Inspect\Core\Http;
+namespace AbmmHasan\WebFace;
 
+use AbmmHasan\WebFace\Base\BaseResponse;
 use InvalidArgumentException;
 
 final class Response extends BaseResponse
@@ -155,5 +156,11 @@ final class Response extends BaseResponse
     public function send()
     {
         self::helloWorld();
+    }
+    public static function handle()
+    {
+        self::$instance ??= new self('', 200, []);
+        $instance = self::$instance;
+        $instance->helloWorld();
     }
 }
