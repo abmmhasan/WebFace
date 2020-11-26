@@ -21,6 +21,7 @@
   "prefer-stable": true,
   "require": {
     "php": ">=7.1",
-    "abmmhasan/di-container": "^1.07"
+    "abmmhasan/di-container": "^1.07",
+    "ext-json": "*"
   }
 }
