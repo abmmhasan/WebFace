@@ -39,6 +39,7 @@ final class Router extends BaseRequest
      * @var array
      */
     private $middleware = [];
+    private $globalMiddleware = [];
 
     private $middlewareCall = 'handle';
     private $middlewareDI = false;
@@ -75,7 +76,7 @@ final class Router extends BaseRequest
         parent::__construct();
         $this->serverBasePath = ($settings['base_path'] ?? $this->url->base);
         $this->namespace = $settings['base_ns'];
-        $this->middleware = $middleware;
+        $this->globalMiddleware = $middleware;
         if (isset($settings['cache_load']) && $settings['cache_load'] && isset($settings['cache_path'])) {
             $this->cacheLoaded = $this->loadCache($settings['cache_path']);
         }
@@ -155,7 +156,7 @@ final class Router extends BaseRequest
      */
     public function run($flash = true)
     {
-        $this->runMiddleware($this->middleware['before'] ?? []);
+        $this->runMiddleware($this->globalMiddleware['before'] ?? []);
         // Handle all routes
         $numHandled = 0;
         if ($this->xhr) {
@@ -181,7 +182,7 @@ final class Router extends BaseRequest
         if ($_SERVER['REQUEST_METHOD'] == 'HEAD') {
             ob_end_clean();
         }
-        $this->runMiddleware($this->middleware['after'] ?? []);
+        $this->runMiddleware($this->globalMiddleware['after'] ?? []);
         if ($flash) {
             responseFlush();
         }
@@ -324,7 +325,7 @@ final class Router extends BaseRequest
         $uri = '/' . trim(substr($this->url->path, strlen($this->serverBasePath)), '/');
         // Check if any exact route exist
         if (isset($routes[$uri])) {
-            if (!$this->routeMiddlewareCheck($route['before'], $this->middleware['route'])) {
+            if (!$this->routeMiddlewareCheck($route['before'], $this->globalMiddleware['route'])) {
                 return true;
             }
             $this->invoke($routes[$uri]['fn'], $routes[$uri]['namespace']);
@@ -334,7 +335,7 @@ final class Router extends BaseRequest
         foreach ($routes as $storedPattern => $route) {
             $pattern = preg_replace('/\/{(.*?)}/', '/(.*?)', $storedPattern);
             if (preg_match_all('#^' . $pattern . '$#', $uri, $matches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER)) {
-                if (!$this->routeMiddlewareCheck($route['before'], $this->middleware['route'])) {
+                if (!$this->routeMiddlewareCheck($route['before'], $this->globalMiddleware['route'])) {
                     return true;
                 }
                 // Rework matches to only contain the matches, not the original string
