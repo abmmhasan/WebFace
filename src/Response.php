@@ -10,15 +10,13 @@ final class Response extends BaseResponse
 {
     public static function __callStatic(string $response_type = 'render', array $parameters = [])
     {
-        self::$instance ??= new self('', 200, []);
+        self::$instance = self::$instance ?? new self('', 200, []);
         $instance = self::$instance;
 
         if ($response_type === 'instance') {
             return $instance;
         } elseif ($response_type === 'status') {
             $instance->setStatus(...$parameters);
-        } elseif ($response_type === 'redirect') {
-            $instance->doRedirect(...$parameters);
         } elseif (!in_array($response_type, $instance->applicableFormat)) {
             return false;
         }
@@ -29,9 +27,7 @@ final class Response extends BaseResponse
         if (isset($parameters[2])) {
             $instance->setHeaderByGroup((array)$parameters[2]);
         }
-        if ($response_type !== 'redirect') {
-            return self::$instance;
-        }
+        return self::$instance;
     }
 
     public function __call($response_type, $parameters)
@@ -130,9 +126,9 @@ final class Response extends BaseResponse
             );
         }
 
-        $params[] = "filename=" . self::quote($filenameFallback);
+        $params[] = "filename=" . self::prepareStringQuote($filenameFallback);
         if ($filename !== $filenameFallback) {
-            $params[] = "filename*=" . self::quote("utf-8''" . rawurlencode($filename));
+            $params[] = "filename*=" . self::prepareStringQuote("utf-8''" . rawurlencode($filename));
         }
         self::setHeader('Content-Disposition', "{$disposition}; " . implode('; ', $params), false);
         return self::$instance;

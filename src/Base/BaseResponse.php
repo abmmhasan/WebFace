@@ -4,10 +4,8 @@
 namespace AbmmHasan\WebFace\Base;
 
 
+use AbmmHasan\WebFace\Utility\HTTPResource;
 use ArrayObject;
-use Inspect\Core\Config;
-use Inspect\Support\GetData;
-use Inspect\Core\Support\Str;
 use InvalidArgumentException;
 use JsonSerializable;
 
@@ -24,31 +22,31 @@ class BaseResponse extends BaseRequest
     /**
      * @var array|mixed
      */
-    private array $code_phrase;
+    private $code_phrase;
     /**
      * @var array|mixed
      */
-    protected array $applicableCaches = [];
+    protected $applicableCaches = [];
     /**
      * @var mixed|string
      */
-    private string $protocolVersion;
+    private $protocolVersion;
     /**
      * @var string
      */
-    protected string $responseStatus;
+    protected $responseStatus;
     /**
      * @var int
      */
-    protected int $responseCode;
+    protected $responseCode;
     /**
      * @var string
      */
-    protected string $charset;
+    protected $charset;
     /**
      * @var array|string[]
      */
-    protected array $applicableFormat = [
+    protected $applicableFormat = [
         'render',
         'json',
         'xml',
@@ -61,15 +59,15 @@ class BaseResponse extends BaseRequest
     /**
      * @var array
      */
-    protected array $responseHeaders;
+    protected $responseHeaders;
     /**
      * @var array
      */
-    protected array $responseCache;
+    protected $responseCache;
     /**
      * @var array
      */
-    protected array $responseCookies = [];
+    protected $responseCookies = [];
 
     /**
      * BaseResponse constructor.
@@ -82,10 +80,9 @@ class BaseResponse extends BaseRequest
     public function __construct($content, $status, $headers)
     {
         parent::__construct();
-        $http_data = GetData::http();
-        $this->code_phrase = $http_data['status'];
-        $this->protocolVersion = $http_data['version'];
-        $this->applicableCaches = $http_data['cache'];
+        $this->code_phrase = HTTPResource::$statusList;
+        $this->protocolVersion = HTTPResource::$responseVersion;
+        $this->applicableCaches = HTTPResource::$cache;
         $this->responseCache['Date'] = httpDate();
         self::setStatus($status);
         self::setContent($content);
@@ -175,67 +172,6 @@ class BaseResponse extends BaseRequest
             self::setHeader($name, $value, false);
         }
         return self::$instance;
-    }
-
-    /**
-     * Redirect to a location
-     *
-     * @param string $url
-     * @param $status
-     * @param array $headers
-     */
-    protected function doRedirect(string $url, $status = 302, array $headers = [])
-    {
-        self::setTargetUrl($url);
-
-        $available = [
-            'created' => 201,
-            'movedPermanently' => 301,
-            'found' => 302,
-            'afterPost' => 303,
-            'seeOther' => 303,
-            'temporaryRedirect' => 307,
-            'permanentRedirect' => 308,
-        ];
-
-        if (!in_array($status, array_keys($available)) || !in_array($status, $available)) {
-            throw new \InvalidArgumentException("The HTTP status code is not a redirect ('{$status}' given).");
-        }
-
-        if (!empty($headers)) {
-            self::setHeaderByGroup($headers);
-        }
-        self::setStatus($available[$status] ?? $status);
-    }
-
-    /**
-     * Setting URL for redirection
-     *
-     * @param string $url
-     */
-    private function setTargetUrl(string $url)
-    {
-        if ('' === $url) {
-            throw new \InvalidArgumentException('Cannot redirect to an empty URL.');
-        }
-
-        self::setContent(
-            sprintf(
-                '<!DOCTYPE html>
-                <html>
-                    <head>
-                        <meta charset="UTF-8" />
-                        <meta http-equiv="refresh" content="0;url=\'%1$s\'" />
-                        <title>Redirecting to %1$s</title>
-                    </head>
-                    <body>
-                        Redirecting to <a href="%1$s">%1$s</a>.
-                    </body>
-                </html>',
-                htmlspecialchars($url, ENT_QUOTES, 'UTF-8')
-            )
-        );
-        self::setHeader('Location', $url, false);
     }
 
     /**
@@ -477,11 +413,26 @@ class BaseResponse extends BaseRequest
                 unset($this->responseCache['ETag']);
             } else {
                 if (0 !== strpos($options['etag'], '"')) {
-                    $options['etag'] = Str::quote(Str::unquote(trim($options['etag'])));
+                    $options['etag'] = $this->prepareStringQuote($options['etag']);
                 }
                 $this->responseCache['ETag'] = trim($options['etag']);
             }
         }
+    }
+
+    /**
+     * Add Quote to a string
+     *
+     * @param string $string
+     * @return string|string[]|null
+     */
+    protected function prepareStringQuote(string $string)
+    {
+        $string = preg_replace('/\\\\(.)|"/', '$1', trim($string));
+        if (preg_match('/^[a-z0-9!#$%&\'*.^_`|~-]+$/i', $string)) {
+            return $string;
+        }
+        return '"' . addcslashes($string, '"\\"') . '"';
     }
 
     /**
@@ -670,12 +621,13 @@ class BaseResponse extends BaseRequest
             header($name . ': ' . implode(',', $values), $replace, $this->responseCode);
         }
 
-        header('X-Powered-By: Inspect Framework', true, $this->responseCode);
+        header('X-Powered-By: WebFace', true, $this->responseCode);
 
         // Set Cookies
         if (!empty($this->responseCookies)) {
+            // ToDo: Move Config & SERVER_TIME
             $cookie_config = Config::get("session");
-            $expire = httpDate(date(DATE_ATOM, SERVER_TIME + ($cookie_config["lifetime"] * 60)));
+            $expire = httpDate(date(DATE_ATOM, $_SERVER['REQUEST_TIME'] + ($cookie_config["lifetime"] * 60)));
             $isSecure = (bool)$cookie_config["secure"] && $this->url->scheme === 'https';
             foreach ($this->responseCookies as $name => $cookie) {
                 setcookie(

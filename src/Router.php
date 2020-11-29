@@ -151,7 +151,7 @@ final class Router extends BaseRequest
     }
 
     /**
-     * @param null $callback
+     * @param bool $flash
      * @return bool
      */
     public function run($flash = true)
@@ -186,7 +186,7 @@ final class Router extends BaseRequest
         if ($flash) {
             responseFlush();
         }
-        return true;
+        return $this->thrownResponse;
     }
 
     /**
@@ -198,6 +198,7 @@ final class Router extends BaseRequest
     }
 
     /**
+     * @param $path
      * @return bool
      */
     private function loadCache($path)
@@ -325,10 +326,11 @@ final class Router extends BaseRequest
         $uri = '/' . trim(substr($this->url->path, strlen($this->serverBasePath)), '/');
         // Check if any exact route exist
         if (isset($routes[$uri])) {
-            if (!$this->routeMiddlewareCheck($route['before'], $this->globalMiddleware['route'])) {
+            if (!$this->routeMiddlewareCheck($routes[$uri]['before'], $this->globalMiddleware['route'])) {
                 return true;
             }
             $this->invoke($routes[$uri]['fn'], $routes[$uri]['namespace']);
+            $this->runMiddleware($route['after'] ?? []);
             return true;
         }
         // Loop all routes to match route pattern
@@ -345,6 +347,7 @@ final class Router extends BaseRequest
                     $params = self::mergeKeys($storedPattern, $params);
                 }
                 $this->invoke($route['fn'], $route['namespace'], $params, $view);
+                $this->runMiddleware($route['after'] ?? []);
                 return true;
             }
         }
@@ -399,6 +402,7 @@ final class Router extends BaseRequest
      * @param $fn
      * @param string $namespace
      * @param array $params
+     * @param bool $view
      */
     private function invoke($fn, $namespace = '', $params = [], $view = false)
     {
@@ -425,8 +429,8 @@ final class Router extends BaseRequest
 
     /**
      * @param $fn
-     * @param string $namespace
-     * @param array $params
+     * @param string $params
+     * @return
      */
     private function invokeMiddleware($fn, $params = '')
     {
