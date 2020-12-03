@@ -51,6 +51,7 @@ final class ClientIP
                 }
             }
         }
+        return null;
     }
 
     /**
@@ -60,15 +61,17 @@ final class ClientIP
      *
      * @return bool Whether the ClientIP is valid
      */
-    public static function check($ips)
+    public static function check($ips, $checkIP = null)
     {
         $ips = is_array($ips) ? $ips : [$ips];
         self::get();
 
-        $method = substr_count(self::$clientIp, ':') > 1 ? 'checkIp6' : 'checkIp4';
+        $check = $checkIP ?? self::$clientIp;
+
+        $method = substr_count($check, ':') > 1 ? 'checkIp6' : 'checkIp4';
 
         foreach ($ips as $ip) {
-            if (self::$method($ip)) {
+            if (self::$method($ip, $check)) {
                 return true;
             }
         }
@@ -118,22 +121,20 @@ final class ClientIP
      *
      * @return bool Whether the request ClientIP matches the ClientIP, or whether the request ClientIP is within the CIDR subnet
      */
-    private static function checkIp4(string $ip)
+    private static function checkIp4(string $ip, $check)
     {
-        $cacheKey = self::$clientIp . '-' . $ip;
+        $cacheKey = $check . '-' . $ip;
         if (isset(self::$checkedIps[$cacheKey])) {
             return self::$checkedIps[$cacheKey];
         }
-
-        if (!filter_var(self::$clientIp, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+        if (!filter_var($check, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
             return self::$checkedIps[$cacheKey] = false;
         }
-
         if (false !== strpos($ip, '/')) {
             list($address, $netmask) = explode('/', $ip, 2);
 
             if ('0' === $netmask) {
-                return self::$checkedIps[$cacheKey] = filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4);
+                return self::$checkedIps[$cacheKey] = filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === $check;
             }
 
             if ($netmask < 0 || $netmask > 32) {
@@ -148,7 +149,7 @@ final class ClientIP
             return self::$checkedIps[$cacheKey] = false;
         }
 
-        return self::$checkedIps[$cacheKey] = 0 === substr_compare(sprintf('%032b', ip2long(self::$clientIp)), sprintf('%032b', ip2long($address)), 0, $netmask);
+        return self::$checkedIps[$cacheKey] = 0 === substr_compare(sprintf('%032b', ip2long($check)), sprintf('%032b', ip2long($address)), 0, $netmask);
     }
 
     /**
@@ -165,9 +166,9 @@ final class ClientIP
      * @author David Soria Parra <dsp at php dot net>
      *
      */
-    private static function checkIp6(string $ip)
+    private static function checkIp6(string $ip, $check)
     {
-        $cacheKey = self::$clientIp . '-' . $ip;
+        $cacheKey = $check . '-' . $ip;
         if (isset(self::$checkedIps[$cacheKey])) {
             return self::$checkedIps[$cacheKey];
         }
@@ -192,7 +193,7 @@ final class ClientIP
         }
 
         $bytesAddr = unpack('n*', @inet_pton($address));
-        $bytesTest = unpack('n*', @inet_pton(self::$clientIp));
+        $bytesTest = unpack('n*', @inet_pton($check));
 
         if (!$bytesAddr || !$bytesTest) {
             return self::$checkedIps[$cacheKey] = false;

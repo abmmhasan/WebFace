@@ -20,18 +20,6 @@ class BaseResponse extends BaseRequest
      */
     protected static $instance;
     /**
-     * @var array|mixed
-     */
-    private $code_phrase;
-    /**
-     * @var array|mixed
-     */
-    protected $applicableCaches = [];
-    /**
-     * @var mixed|string
-     */
-    private $protocolVersion;
-    /**
      * @var string
      */
     protected $responseStatus;
@@ -80,9 +68,6 @@ class BaseResponse extends BaseRequest
     public function __construct($content, $status, $headers)
     {
         parent::__construct();
-        $this->code_phrase = HTTPResource::$statusList;
-        $this->protocolVersion = HTTPResource::$responseVersion;
-        $this->applicableCaches = HTTPResource::$cache;
         $this->responseCache['Date'] = httpDate();
         self::setStatus($status);
         self::setContent($content);
@@ -97,11 +82,11 @@ class BaseResponse extends BaseRequest
     protected function setStatus($code)
     {
         $code = (int)$code;
-        if (!in_array($code, array_keys($this->code_phrase))) {
+        $codePhrase = HTTPResource::$statusList;
+        if (!in_array($code, array_keys($codePhrase))) {
             throw new InvalidArgumentException("Invalid status code {$code}!");
         }
-        $phrase = $this->code_phrase[$code] ?? null;
-        $this->responseStatus = "HTTP/{$this->protocolVersion} {$code} {$phrase}";
+        $this->responseStatus = "HTTP/" . HTTPResource::$responseVersion . " {$code} {$codePhrase[$code]}";
         $this->responseCode = $code;
     }
 
@@ -325,7 +310,7 @@ class BaseResponse extends BaseRequest
      */
     protected function setControlCache($options)
     {
-        foreach ($this->applicableCaches as $directive => $hasValue) {
+        foreach (HTTPResource::$cache as $directive => $hasValue) {
             if ($hasValue && isset($options[$directive])) {
                 if ($options[$directive]) {
                     $this->responseCache['control'][$directive] = str_replace('_', '-', $directive);

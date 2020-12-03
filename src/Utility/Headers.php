@@ -133,7 +133,6 @@ final class Headers
             return self::$dependency;
         }
         self::all();
-        $url = URL::get();
         return self::$dependency = new Arrject([
             'if_match' => preg_split(
                 '/\s*,\s*/',
@@ -151,7 +150,7 @@ final class Headers
                 date(DATE_ATOM, strtotime(self::$headers['If-Modified-Since'])) : null,
             'if_unmodified_since' => !empty(self::$headers['If-Unmodified-Since']) ?
                 date(DATE_ATOM, strtotime(self::$headers['If-Unmodified-Since'])) : null,
-            'prefer_safe' => (self::$headers['Prefer'] ?? '') === 'safe' && $url->scheme === 'https'
+            'prefer_safe' => (self::$headers['Prefer'] ?? '') === 'safe' && URL::get()->scheme === 'https'
         ]);
     }
 
