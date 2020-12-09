@@ -52,8 +52,8 @@ class BaseRequest
             throw new BadMethodCallException("Invalid method override {$requestMethod}.");
         }
         if ($requestMethod === 'HEAD') {
-            ob_start();
             $requestMethod = 'GET';
+            ob_start();
         } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (isset($this->headers['X-HTTP-Method-Override'])) {
                 $requestMethod = $this->headers['X-HTTP-Method-Override'];

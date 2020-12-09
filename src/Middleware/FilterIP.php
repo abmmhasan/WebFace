@@ -14,16 +14,13 @@ class FilterIP
     public function handle()
     {
         $clientIP = ClientIP::get() ?? $_SERVER['REMOTE_ADDR'];
-        return !$this->isForbidden($clientIP) && $this->isAllowed($clientIP);
+        return !empty($clientIP) && !$this->isForbidden($clientIP) && $this->isAllowed($clientIP);
     }
 
     private function isForbidden($clientIP)
     {
         if (empty($this->forbidden)) {
             return false;
-        }
-        if (empty($clientIP)) {
-            return true;
         }
         return ClientIP::check($this->forbidden, $clientIP);
     }
@@ -32,9 +29,6 @@ class FilterIP
     {
         if (empty($this->allowed)) {
             return true;
-        }
-        if (empty($clientIP)) {
-            return false;
         }
         return ClientIP::check($this->allowed, $clientIP);
     }
