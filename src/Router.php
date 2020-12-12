@@ -123,10 +123,6 @@ final class Router extends BaseRoute
         if (!$numHandled) {
             $this->thrownResponse['code'] = 404;
         }
-        // If it originally was a HEAD request, clean up after ourselves by emptying the output buffer
-        if ($_SERVER['REQUEST_METHOD'] == 'HEAD') {
-            ob_end_clean();
-        }
         $this->runMiddleware($this->globalMiddleware['after'] ?? []);
         if ($flash) {
             responseFlush();

@@ -21,7 +21,6 @@ class BaseRoute extends BaseRequest
         'POST',
         'PUT',
         'DELETE',
-        'HEAD',
         'OPTIONS',
         'PATCH',
         'ANY',

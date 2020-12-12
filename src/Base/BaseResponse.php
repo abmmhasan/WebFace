@@ -4,7 +4,7 @@
 namespace AbmmHasan\WebFace\Base;
 
 
-use AbmmHasan\WebFace\Utility\HTTPResource;
+use AbmmHasan\WebFace\Support\HTTPResource;
 use ArrayObject;
 use InvalidArgumentException;
 use JsonSerializable;
@@ -57,6 +57,8 @@ class BaseResponse extends BaseRequest
      */
     protected $responseCookies = [];
 
+    protected $sendResponseBody = true;
+
     /**
      * BaseResponse constructor.
      *
@@ -69,9 +71,9 @@ class BaseResponse extends BaseRequest
     {
         parent::__construct();
         $this->responseCache['Date'] = httpDate();
-        self::setStatus($status);
-        self::setContent($content);
-        self::setHeaderByGroup($headers);
+        $this->setStatus($status);
+        $this->setContent($content);
+        $this->setHeaderByGroup($headers);
     }
 
     /**
@@ -123,8 +125,8 @@ class BaseResponse extends BaseRequest
      */
     protected function setContent($content, $type = 'html')
     {
-        if ($type === 'json' || self::isJsonAble($content)) {
-            self::setHeader('Content-Type', 'application/json', false);
+        if ($type === 'json' || $this->isJsonAble($content)) {
+            $this->setHeader('Content-Type', 'application/json', false);
             $this->responseContent = json_encode($content, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
             return true;
         }
@@ -154,150 +156,9 @@ class BaseResponse extends BaseRequest
     public function setHeaderByGroup(array $headers)
     {
         foreach ($headers as $name => $value) {
-            self::setHeader($name, $value, false);
+            $this->setHeader($name, $value, false);
         }
         return self::$instance;
-    }
-
-    /**
-     * Preparing standard response
-     *
-     * RFC 2616
-     *
-     * @return bool
-     */
-    protected function prepare()
-    {
-        $isEmpty = self::emptyResponse();
-        $isUnmodified = self::notModified();
-        if ($isEmpty || $isUnmodified) {
-            return true;
-        }
-
-        // Content-type based on the Request
-        if (!isset($this->responseHeaders['Content-Type'])) {
-            $format = $this->headers['Content-Type'][0] ?? $this->contentHeader['type'] ?? '';
-            if (self::getTypeHeader($format)) {
-                self::setHeader('Content-Type', $format, false);
-            }
-        }
-        // Fix Content-Type
-        $responseCharset = $this->charset ?? $this->contentHeader['charset'] ?? 'UTF-8';
-        if (!isset($this->responseHeaders['Content-Type'])) {
-            self::setHeader('Content-Type', 'text/html; charset=' . $responseCharset, false);
-        } elseif (0 === stripos($this->responseHeaders['Content-Type'][0], 'text/') && false === stripos(
-                $this->responseHeaders['Content-Type'][0],
-                'charset'
-            )) {
-            self::setHeader(
-                'Content-Type',
-                $this->responseHeaders['Content-Type'][0] . '; charset=' . $responseCharset,
-                false
-            );
-        }
-
-        // Fix Content-Length
-        if (isset($this->responseHeaders['Transfer-Encoding'])) {
-            unset($this->responseHeaders['Content-Length']);
-        }
-
-        if ($this->method === 'HEAD') {
-            $length = $this->responseHeaders['Content-Length'][0];
-            $this->responseContent = null;
-            if ($length) {
-                self::setHeader('Content-Length', $length, false);
-            }
-        }
-        return true;
-    }
-
-    private function checkIfIntact()
-    {
-        $intact = false;
-        if (in_array($this->method, ['GET', 'HEAD'])) {
-            $lastModified = $this->responseHeaders['Last-Modified'] ?? null;
-            $notModifiedSince = $this->dependencyHeader['if_unmodified_since'];
-            if (!empty($this->dependencyHeader['if_match'])) {
-                $intact = in_array(
-                        $this->responseCache['ETag'] ?? '*',
-                        $this->dependencyHeader['if_match']
-                    ) || in_array('*', $this->dependencyHeader['if_match']);
-            }
-            if ($notModifiedSince && $lastModified && empty($this->dependencyHeader['if_match'])) {
-                $intact = strtotime($notModifiedSince) >= strtotime($lastModified);
-            }
-            if ((!empty($this->dependencyHeader['if_match']) || $notModifiedSince) && !$intact) {
-                self::setStatus(412);
-                self::processResponse();
-            }
-        }
-        return $intact;
-    }
-
-    /**
-     * Check if response body should be empty or not, depending on Status code
-     *
-     * @return bool
-     */
-    private function emptyResponse()
-    {
-        if (($this->responseCode >= 100 && $this->responseCode < 200) || in_array($this->responseCode, [204, 304])) {
-            $this->responseContent = null;
-            unset($this->responseHeaders['Content-Type']);
-            unset($this->responseHeaders['Content-Length']);
-            ini_set('default_mimetype', '');
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Check if the response is eligible and Should be set as not modified
-     *
-     * RFC 2616
-     *
-     * @return bool
-     */
-    private function notModified()
-    {
-        $notModified = false;
-        if (in_array($this->method, ['GET', 'HEAD'])) {
-            $lastModified = $this->responseHeaders['Last-Modified'] ?? null;
-            $modifiedSince = $this->dependencyHeader['if_modified_since'];
-            if (!empty($this->dependencyHeader['if_none_match'])) {
-                $notModified = in_array(
-                        $this->responseCache['ETag'] ?? '*',
-                        $this->dependencyHeader['if_none_match']
-                    ) || in_array('*', $this->dependencyHeader['if_none_match']);
-            }
-            if ($modifiedSince && $lastModified) {
-                $notModified = strtotime($modifiedSince) >= strtotime($lastModified) &&
-                    (empty($this->dependencyHeader['if_none_match']) || $notModified);
-            }
-            if ($notModified) {
-                self::setStatus(304);
-                self::processResponse();
-            }
-        }
-        return $notModified;
-    }
-
-    private function processResponse()
-    {
-        $this->responseContent = null;
-        foreach (
-            [
-                'Allow',
-                'Content-Encoding',
-                'Content-Language',
-                'Content-Length',
-                'Content-MD5',
-                'Content-Type',
-                'Last-Modified'
-            ] as $header
-        ) {
-            unset($this->responseHeaders[$header]);
-        }
     }
 
     /**
@@ -448,98 +309,6 @@ class BaseResponse extends BaseRequest
     }
 
     /**
-     * Cache Control Calculator
-     *
-     * This will set the Control directives to desired standard
-     *
-     * @return mixed|string[]
-     */
-    private function computeCacheControl()
-    {
-        if (empty($this->responseCache['control'])) {
-            if (isset($this->responseCache['Last-Modified'])) {
-                return ['private', 'must-revalidate'];
-            }
-            return ['no-cache', 'private'];
-        }
-
-        if (!$this->isSharedCacheable()) {
-            unset($this->responseCache['control']['s-maxage']);
-        }
-
-        if (isset($this->responseCache['control']['s-maxage'])) {
-            $this->responseCache['control']['visibility'] = 'public';
-        }
-
-        if (isset($this->responseCache['control']['visibility'])) {
-            return $this->responseCache['control'];
-        }
-
-        if (!isset($this->responseCache['control']['s-maxage'])) {
-            $this->responseCache['control']['visibility'] = 'private';
-            return $this->responseCache['control'];
-        }
-    }
-
-    /**
-     * Preparing cache headers
-     *
-     * RFC 7231, RFC 7234, RFC 8674
-     *
-     * @return bool
-     */
-    protected function prepareCacheHeader()
-    {
-        if (in_array($this->method, ['GET', 'HEAD', 'POST']) &&
-            in_array($this->responseCode, [200, 203, 204, 206, 300, 404, 405, 410, 414, 501])) {
-            $control = array_values(self::computeCacheControl());
-            if (!empty($control)) {
-                self::setHeader('Cache-Control', implode(',', $control));
-            }
-        }
-        unset($this->responseCache['control']);
-        if ($this->dependencyHeader['prefer_safe']) {
-            $this->responseCache['special']['Vary'][] = 'Prefer';
-            self::setHeader('Preference-Applied', 'safe');
-        }
-        if (isset($this->responseCache['special'])) {
-            foreach ($this->responseCache['special'] as $label => $value) {
-                self::setHeader($label, implode(',', $value));
-            }
-            unset($this->responseCache['special']);
-        }
-        foreach ($this->responseCache as $label => $value) {
-            self::setHeader($label, $value);
-        }
-        return true;
-    }
-
-    /**
-     * Check if the response is intermediary cacheable
-     *
-     * RFC 7231
-     *
-     * @return bool
-     */
-    public function isSharedCacheable(): bool
-    {
-        if (!in_array($this->responseCode, [200, 203, 300, 301, 302, 404, 410])) {
-            return false;
-        }
-
-        if (isset($this->responseCache['control']['no_store']) ||
-            $this->responseCache['control']['visibility'] == 'private') {
-            return false;
-        }
-
-        $maxAge = $this->responseCache['control']['s-maxage'] ?? $this->responseCache['control']['max-age'] ?? null;
-
-        $fresh = (null !== $maxAge ? $maxAge - $this->responseCache['Age'] : null) > 0;
-
-        return isset($this->responseCache['Last-Modified']) || $fresh;
-    }
-
-    /**
      * Checks if eligible header found
      *
      * This is still experimental
@@ -630,6 +399,242 @@ class BaseResponse extends BaseRequest
         }
     }
 
+
+    private function processResponse()
+    {
+        $this->sendResponseBody = false;
+        foreach (
+            [
+                'Allow',
+                'Content-Encoding',
+                'Content-Language',
+                'Content-Length',
+                'Content-MD5',
+                'Content-Type',
+                'Last-Modified'
+            ] as $header
+        ) {
+            unset($this->responseHeaders[$header]);
+        }
+    }
+
+    /**
+     * Check if the response is eligible and Should be set as not modified
+     *
+     * RFC 2616
+     *
+     * @return bool
+     */
+    private function notModified()
+    {
+        $notModified = false;
+        if ($this->method === 'GET') {
+            $lastModified = $this->responseHeaders['Last-Modified'] ?? null;
+            $modifiedSince = $this->dependencyHeader['if_modified_since'];
+            if (!empty($this->dependencyHeader['if_none_match'])) {
+                $notModified = in_array(
+                        $this->responseCache['ETag'] ?? '*',
+                        $this->dependencyHeader['if_none_match']
+                    ) || in_array('*', $this->dependencyHeader['if_none_match']);
+            }
+            if ($modifiedSince && $lastModified) {
+                $notModified = strtotime($modifiedSince) >= strtotime($lastModified) &&
+                    (empty($this->dependencyHeader['if_none_match']) || $notModified);
+            }
+            if ($notModified) {
+                $this->setStatus(304);
+                $this->processResponse();
+            }
+        }
+        return $notModified;
+    }
+
+    /**
+     * Check if response body should be empty or not, depending on Status code
+     *
+     * @return bool
+     */
+    private function emptyResponse()
+    {
+        if (($this->responseCode >= 100 && $this->responseCode < 200) || in_array($this->responseCode, [204, 304])) {
+            $this->sendResponseBody = false;
+            unset($this->responseHeaders['Content-Type']);
+            unset($this->responseHeaders['Content-Length']);
+            ini_set('default_mimetype', '');
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Preparing standard response
+     *
+     * RFC 2616
+     *
+     * @return bool
+     */
+    protected function prepare()
+    {
+        $isEmpty = $this->emptyResponse();
+        $isUnmodified = $this->notModified();
+        if ($isEmpty || $isUnmodified) {
+            return true;
+        }
+
+        // Content-type based on the Request
+        if (!isset($this->responseHeaders['Content-Type'])) {
+            $format = $this->headers['Content-Type'][0] ?? $this->contentHeader['type'] ?? '';
+            if ($this->getTypeHeader($format)) {
+                $this->setHeader('Content-Type', $format, false);
+            }
+        }
+        // Fix Content-Type
+        $responseCharset = $this->charset ?? $this->contentHeader['charset'] ?? 'UTF-8';
+        if (!isset($this->responseHeaders['Content-Type'])) {
+            $this->setHeader('Content-Type', 'text/html; charset=' . $responseCharset, false);
+        } elseif (0 === stripos($this->responseHeaders['Content-Type'][0], 'text/') && false === stripos(
+                $this->responseHeaders['Content-Type'][0],
+                'charset'
+            )) {
+            $this->setHeader(
+                'Content-Type',
+                $this->responseHeaders['Content-Type'][0] . '; charset=' . $responseCharset,
+                false
+            );
+        }
+
+        // Fix Content-Length
+        if (isset($this->responseHeaders['Transfer-Encoding'])) {
+            unset($this->responseHeaders['Content-Length']);
+        }
+        return true;
+    }
+
+    /**
+     * Check if the response is intermediary cacheable
+     *
+     * RFC 7231
+     *
+     * @return bool
+     */
+    public function isSharedCacheable(): bool
+    {
+        if (!in_array($this->responseCode, [200, 203, 300, 301, 302, 404, 410])) {
+            return false;
+        }
+
+        if (isset($this->responseCache['control']['no_store']) ||
+            $this->responseCache['control']['visibility'] == 'private') {
+            return false;
+        }
+
+        $maxAge = $this->responseCache['control']['s-maxage'] ?? $this->responseCache['control']['max-age'] ?? null;
+
+        $fresh = (null !== $maxAge ? $maxAge - $this->responseCache['Age'] : null) > 0;
+
+        return isset($this->responseCache['Last-Modified']) || $fresh;
+    }
+
+    /**
+     * Cache Control Calculator
+     *
+     * This will set the Control directives to desired standard
+     *
+     * @return mixed|string[]
+     */
+    private function computeCacheControl()
+    {
+        if (empty($this->responseCache['control'])) {
+            if (isset($this->responseCache['Last-Modified'])) {
+                return ['private', 'must-revalidate'];
+            }
+            return ['no-cache', 'private'];
+        }
+
+        if (!$this->isSharedCacheable()) {
+            unset($this->responseCache['control']['s-maxage']);
+        }
+
+        if (isset($this->responseCache['control']['s-maxage'])) {
+            $this->responseCache['control']['visibility'] = 'public';
+        }
+
+        if (isset($this->responseCache['control']['visibility'])) {
+            return $this->responseCache['control'];
+        }
+
+        if (!isset($this->responseCache['control']['s-maxage'])) {
+            $this->responseCache['control']['visibility'] = 'private';
+        }
+        return $this->responseCache['control'];
+    }
+
+    /**
+     * Preparing cache headers
+     *
+     * RFC 7231, RFC 7234, RFC 8674
+     *
+     * @return bool
+     */
+    private function prepareCacheHeader()
+    {
+        if (in_array($this->method, ['GET', 'POST']) &&
+            in_array($this->responseCode, [200, 203, 204, 206, 300, 404, 405, 410, 414, 501])) {
+            $control = array_values($this->computeCacheControl());
+            if (!empty($control)) {
+                $this->setHeader('Cache-Control', implode(',', $control));
+            }
+        }
+        unset($this->responseCache['control']);
+        if ($this->dependencyHeader['prefer_safe']) {
+            $this->responseCache['special']['Vary'][] = 'Prefer';
+            $this->setHeader('Preference-Applied', 'safe');
+        }
+        if (isset($this->responseCache['special'])) {
+            foreach ($this->responseCache['special'] as $label => $value) {
+                $this->setHeader($label, implode(',', $value));
+            }
+            unset($this->responseCache['special']);
+        }
+        foreach ($this->responseCache as $label => $value) {
+            $this->setHeader($label, $value);
+        }
+        return true;
+    }
+
+    private function checkIfIntact()
+    {
+        $intact = false;
+        if ($this->method === 'GET') {
+            $lastModified = $this->responseHeaders['Last-Modified'] ?? null;
+            $notModifiedSince = $this->dependencyHeader['if_unmodified_since'];
+            if (!empty($this->dependencyHeader['if_match'])) {
+                $intact = in_array('*', $this->dependencyHeader['if_match']) ||
+                    in_array($this->responseCache['ETag'] ?? '*', $this->dependencyHeader['if_match']);
+            }
+            if ($notModifiedSince && $lastModified && empty($this->dependencyHeader['if_match'])) {
+                $intact = strtotime($notModifiedSince) >= strtotime($lastModified);
+            }
+            if ((!empty($this->dependencyHeader['if_match']) || $notModifiedSince) && !$intact) {
+                $this->setStatus(412);
+                $this->processResponse();
+            }
+        }
+        return $intact;
+    }
+
+    private function handleContent()
+    {
+        $length = null;
+        if ($this->sendResponseBody) {
+            ob_start();
+            echo $this->responseContent;
+            $length = ob_get_length();
+            ob_get_flush();
+        }
+        return $length;
+    }
+
     /**
      * Sends output
      *
@@ -637,18 +642,23 @@ class BaseResponse extends BaseRequest
      */
     protected function helloWorld()
     {
-        if (!self::checkIfIntact()) {
-            self::prepareCacheHeader();
-            self::prepare();
+        if (!$this->checkIfIntact()) {
+            $this->prepareCacheHeader();
+            $this->prepare();
         }
-        self::sendHeaders();
-        echo $this->responseContent;
 
-        if (function_exists('fastcgi_finish_request')) {
-            fastcgi_finish_request();
-        } elseif (!in_array(PHP_SAPI, ['cli', 'phpdbg'], true)) {
+        $flush = $this->originalMethod !== 'HEAD';
+
+        $length = $this->handleContent();
+
+        if (!$flush && !is_null($length)) {
+            $this->setHeader('Content-Length', $length, false);
+        }
+
+        $this->sendHeaders();
+
+        if (!in_array(PHP_SAPI, ['cli', 'phpdbg'], true)) {
             $targetLevel = 0;
-            $flush = true;
             $status = ob_get_status(true);
             $level = count($status);
             $flags = PHP_OUTPUT_HANDLER_REMOVABLE | ($flush ? PHP_OUTPUT_HANDLER_FLUSHABLE : PHP_OUTPUT_HANDLER_CLEANABLE);

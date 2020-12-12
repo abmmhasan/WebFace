@@ -19,6 +19,7 @@ class BaseRequest
     protected $client;
     protected $headers;
     protected $method;
+    protected $originalMethod;
     protected $url;
     protected $xhr;
     protected $contentHeader;
@@ -33,7 +34,7 @@ class BaseRequest
         $this->server = new Arrject($_SERVER);
         $this->cookie = new Arrject($_COOKIE);
         $this->headers = Headers::all();
-        $this->method = self::getMethod();
+        $this->method = $this->getMethod();
         $this->contentHeader = Headers::content();
         $this->accept = Headers::accept();
         $this->url = URL::get();
@@ -51,9 +52,9 @@ class BaseRequest
         if (!in_array($requestMethod, $this->methods)) {
             throw new BadMethodCallException("Invalid method override {$requestMethod}.");
         }
+        $this->originalMethod = $requestMethod;
         if ($requestMethod === 'HEAD') {
             $requestMethod = 'GET';
-            ob_start();
         } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (isset($this->headers['X-HTTP-Method-Override'])) {
                 $requestMethod = $this->headers['X-HTTP-Method-Override'];
