@@ -10,6 +10,16 @@ if (!function_exists('responseFlush')) {
     }
 }
 
+if (!function_exists('cacheRoute')) {
+    /**
+     * Send response
+     */
+    function cacheRoute()
+    {
+        print_r($_SERVER);
+    }
+}
+
 if (!function_exists('httpDate')) {
     /**
      * Converts any recognizable date format to an HTTP date.

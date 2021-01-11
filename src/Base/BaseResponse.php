@@ -606,7 +606,7 @@ class BaseResponse extends BaseRequest
     private function checkIfIntact()
     {
         $intact = false;
-        if ($this->method === 'GET') {
+        if ($this->method === 'GET' && empty(Storage::$response_throw)) {
             $lastModified = $this->responseHeaders['Last-Modified'] ?? null;
             $notModifiedSince = $this->dependencyHeader['if_unmodified_since'];
             if (!empty($this->dependencyHeader['if_match'])) {

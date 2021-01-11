@@ -23,5 +23,10 @@
     "php": ">=7.2",
     "abmmhasan/di-container": "^1.07",
     "ext-json": "*"
+  },
+  "scripts" : {
+    "cacheRoute": [
+      "cacheRoute"
+    ]
   }
 }
