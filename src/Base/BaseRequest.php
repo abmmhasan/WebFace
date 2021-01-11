@@ -27,7 +27,6 @@ class BaseRequest
     protected $accept;
     protected $dependencyHeader;
     protected $cookie;
-    protected $thrownResponse;
 
     public function __construct()
     {

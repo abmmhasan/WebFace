@@ -5,6 +5,8 @@ namespace AbmmHasan\WebFace\Base;
 
 
 use AbmmHasan\WebFace\Support\HTTPResource;
+use AbmmHasan\WebFace\Support\Settings;
+use AbmmHasan\WebFace\Support\Storage;
 use ArrayObject;
 use InvalidArgumentException;
 use JsonSerializable;
@@ -103,7 +105,7 @@ class BaseResponse extends BaseRequest
     public function setHeader($label, $value = '', $append = true)
     {
         $label = preg_replace('/[^a-zA-Z0-9-]/', '', $label);
-        $label = ucwords(strtolower($label), "-");
+        $label = ucwords($label, "-");
         $value = str_replace(["\r", "\n"], '', trim($value));
 
         if ($append && $value !== '') {
@@ -379,20 +381,18 @@ class BaseResponse extends BaseRequest
 
         // Set Cookies
         if (!empty($this->responseCookies)) {
-            // ToDo: Move Config & SERVER_TIME
-            $cookie_config = Config::get("session");
-            $expire = httpDate(date(DATE_ATOM, $_SERVER['REQUEST_TIME'] + ($cookie_config["lifetime"] * 60)));
-            $isSecure = (bool)$cookie_config["secure"] && $this->url->scheme === 'https';
+            $expire = time() + (Settings::$cookie_lifetime * 60);
+            $isSecure = (bool)Settings::$cookie_is_secure && $this->url->scheme === 'https';
             foreach ($this->responseCookies as $name => $cookie) {
                 setcookie(
                     $name,
                     $cookie['value'],
                     [
                         'expires' => $expire,
-                        'path' => $cookie_config["path"],
-                        'domain' => $cookie_config["domain"],
+                        'path' => Settings::$cookie_path,
+                        'domain' => Settings::$cookie_domain,
                         'secure' => $isSecure,
-                        'httponly' => (bool)$cookie_config["http_only"]
+                        'httponly' => (bool)Settings::$cookie_http_only
                     ] + ($this->responseCookies[$name]['options'] ?? [])
                 );
             }
@@ -524,7 +524,8 @@ class BaseResponse extends BaseRequest
         }
 
         if (isset($this->responseCache['control']['no_store']) ||
-            $this->responseCache['control']['visibility'] == 'private') {
+            (isset($this->responseCache['control']['visibility']) &&
+                $this->responseCache['control']['visibility'] == 'private')) {
             return false;
         }
 
@@ -628,7 +629,9 @@ class BaseResponse extends BaseRequest
         $length = null;
         if ($this->sendResponseBody) {
             ob_start();
+            ob_start("ob_gzhandler");
             echo $this->responseContent;
+            ob_get_flush();
             $length = ob_get_length();
             ob_get_flush();
         }
@@ -640,31 +643,34 @@ class BaseResponse extends BaseRequest
      *
      * @throws \Exception
      */
-    protected function helloWorld()
+    protected function helloWorld($targetFlashLevel = 0)
     {
+        if (!empty(Storage::$response_throw)) {
+            $this->setStatus(Storage::$response_throw['code'] ?? 400);
+            $this->setContent(Storage::$response_throw['message'] ?? null);
+        }
         if (!$this->checkIfIntact()) {
             $this->prepareCacheHeader();
             $this->prepare();
         }
 
-        $flush = $this->originalMethod !== 'HEAD';
+        $flushable = $this->originalMethod !== 'HEAD';
 
         $length = $this->handleContent();
 
-        if (!$flush && !is_null($length)) {
+        if (!$flushable && !is_null($length)) {
             $this->setHeader('Content-Length', $length, false);
         }
 
         $this->sendHeaders();
 
         if (!in_array(PHP_SAPI, ['cli', 'phpdbg'], true)) {
-            $targetLevel = 0;
             $status = ob_get_status(true);
             $level = count($status);
-            $flags = PHP_OUTPUT_HANDLER_REMOVABLE | ($flush ? PHP_OUTPUT_HANDLER_FLUSHABLE : PHP_OUTPUT_HANDLER_CLEANABLE);
+            $flags = PHP_OUTPUT_HANDLER_REMOVABLE | ($flushable ? PHP_OUTPUT_HANDLER_FLUSHABLE : PHP_OUTPUT_HANDLER_CLEANABLE);
 
-            while ($level-- > $targetLevel && ($s = $status[$level]) && (!isset($s['del']) ? !isset($s['flags']) || ($s['flags'] & $flags) === $flags : $s['del'])) {
-                if ($flush) {
+            while ($level-- > $targetFlashLevel && ($s = $status[$level]) && (!isset($s['del']) ? !isset($s['flags']) || ($s['flags'] & $flags) === $flags : $s['del'])) {
+                if ($flushable) {
                     ob_end_flush();
                 } else {
                     ob_end_clean();

@@ -4,6 +4,9 @@
 namespace AbmmHasan\WebFace\Base;
 
 
+use AbmmHasan\WebFace\Support\Settings;
+use AbmmHasan\WebFace\Support\Storage;
+
 class BaseRoute extends BaseRequest
 {
     protected $routes = [];
@@ -36,10 +39,10 @@ class BaseRoute extends BaseRequest
      * @param $path
      * @return bool
      */
-    protected function loadCache($path)
+    protected function loadCache()
     {
-        if (file_exists($path)) {
-            $this->routes = require($path);
+        if (file_exists(Settings::$cache_path)) {
+            $this->routes = require(Settings::$cache_path);
             return true;
         }
         return false;
@@ -214,8 +217,8 @@ class BaseRoute extends BaseRequest
                 if (isset($collection[$parameterSeparation[0]])) {
                     $eligible = $this->invokeMiddleware($collection[$parameterSeparation[0]], $parameterSeparation[1] ?? '');
                     if (!is_bool($eligible) || $eligible !== true) {
-                        $this->thrownResponse['code'] = $eligible['status'] ?? 403;
-                        $this->thrownResponse['message'] = $eligible['message'] ?? $eligible;
+                        Storage::$response_throw['code'] = $eligible['status'] ?? 403;
+                        Storage::$response_throw['message'] = $eligible['message'] ?? $eligible;
                         return false;
                     }
                 }
@@ -276,14 +279,14 @@ class BaseRoute extends BaseRequest
         $params = explode(',', $params);
         if ($fn instanceof \Closure) {
             $resource = initiate($fn, ...$params);
-            if (!$this->middlewareDI) {
+            if (!Settings::$middleware_di) {
                 $resource->_noInject();
             }
             return $resource->closure();
         } else {
             $method = $this->middlewareCall;
             $resource = initiate($fn);
-            if (!$this->middlewareDI) {
+            if (!Settings::$middleware_di) {
                 $resource->_noInject();
             }
             return $resource->$method(...$params);

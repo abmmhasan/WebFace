@@ -4,6 +4,7 @@
 namespace AbmmHasan\WebFace;
 
 use AbmmHasan\WebFace\Base\BaseResponse;
+use AbmmHasan\WebFace\Support\HTTPResource;
 use InvalidArgumentException;
 
 final class Response extends BaseResponse
@@ -48,7 +49,7 @@ final class Response extends BaseResponse
     public function setCache(array $options): object
     {
         // Check if keys are applicable
-        if ($diff = array_diff(array_keys($options), array_keys($this->applicableCaches))) {
+        if ($diff = array_diff(array_keys($options), array_keys(HTTPResource::$cache))) {
             throw new InvalidArgumentException(
                 sprintf('Response does not support the following options: "%s".', implode('", "', $diff))
             );
@@ -78,18 +79,18 @@ final class Response extends BaseResponse
      * @param array $same_site
      * @return BaseResponse
      */
-    public function setCookie($name, $value, int $max_age = 0, array $same_site = [])
+    public function setCookie($name, $value, int $max_age = null, array $same_site = [])
     {
-        if ($same_site && !in_array($same_site, ['Strict', 'Lax', 'None'])) {
+        if (!empty($same_site) && !in_array($same_site, ['Strict', 'Lax', 'None'])) {
             throw new InvalidArgumentException(
                 "Invalid SameSite value! It could be any of " . implode(',', ['Strict', 'Lax', 'None'])
             );
         }
         $this->responseCookies[$name]['value'] = $value;
-        if ($max_age) {
+        if (!empty($max_age)) {
             $this->responseCookies[$name]['options']['maxage'] = $max_age;
         }
-        if ($same_site) {
+        if (!empty($same_site)) {
             $this->responseCookies[$name]['options']['samesite'] = $same_site;
         }
         return self::$instance;

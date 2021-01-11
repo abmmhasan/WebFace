@@ -5,6 +5,8 @@ namespace AbmmHasan\WebFace;
 
 use AbmmHasan\WebFace\Base\BaseRequest;
 use AbmmHasan\WebFace\Base\BaseRoute;
+use AbmmHasan\WebFace\Support\Settings;
+use AbmmHasan\WebFace\Support\Storage;
 use BadMethodCallException;
 
 /**
@@ -16,17 +18,14 @@ final class Router extends BaseRoute
      * Router constructor.
      * @param array $settings
      */
-    public function __construct($settings = [], $middleware = [])
+    public function __construct($middleware = [])
     {
         parent::__construct();
-        $this->serverBasePath = ($settings['base_path'] ?? $this->url->base);
-        $this->namespace = $settings['base_ns'];
+        $this->serverBasePath = empty(Settings::$base_path) ? $this->url->base : Settings::$base_path;
+        $this->namespace = Settings::$base_namespace;
         $this->globalMiddleware = $middleware;
-        if (isset($settings['cache_load']) && $settings['cache_load'] && isset($settings['cache_path'])) {
-            $this->cacheLoaded = $this->loadCache($settings['cache_path']);
-        }
-        if (isset($settings['middleware_di']) && is_bool($settings['middleware_di'])) {
-            $this->middlewareDI = $settings['middleware_di'];
+        if (Settings::$cache_load && !empty(Settings::$cache_path)) {
+            $this->cacheLoaded = $this->loadCache();
         }
     }
 
@@ -121,13 +120,13 @@ final class Router extends BaseRoute
 
         // If no route was handled, trigger the 404 (if any)
         if (!$numHandled) {
-            $this->thrownResponse['code'] = 404;
+            Storage::$response_throw['code'] = 404;
         }
         $this->runMiddleware($this->globalMiddleware['after'] ?? []);
         if ($flash) {
             responseFlush();
         }
-        return $this->thrownResponse;
+        return Storage::$response_throw;
     }
 
     /**
