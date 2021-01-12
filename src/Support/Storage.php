@@ -4,6 +4,8 @@
 namespace AbmmHasan\WebFace\Support;
 
 
+use AbmmHasan\WebFace\Router;
+
 class Storage
 {
     public static $response_throw = [];
