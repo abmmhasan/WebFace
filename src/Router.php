@@ -105,16 +105,16 @@ final class Router extends BaseRoute
         $numHandled = 0;
         if ($this->xhr) {
             if ($this->method === 'GET' && isset($this->routes["AJAX"])) {
-                $numHandled = $this->handle($this->routes["AJAX"]);
+                $numHandled = $this->handle($this->routes["AJAX"], 'AJAX');
             } elseif (isset($this->routes["X" . $this->method])) {
-                $numHandled = $this->handle($this->routes["X" . $this->method]);
+                $numHandled = $this->handle($this->routes["X" . $this->method], "X" . $this->method);
             }
         } else {
             if (isset($this->routes[$this->method])) {
-                $numHandled = $this->handle($this->routes[$this->method]);
+                $numHandled = $this->handle($this->routes[$this->method],$this->method);
             }
             if (!$numHandled && isset($this->routes["ANY"])) {
-                $numHandled = $this->handle($this->routes["ANY"]);
+                $numHandled = $this->handle($this->routes["ANY"], 'ANY');
             }
         }
 

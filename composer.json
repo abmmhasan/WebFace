@@ -17,6 +17,13 @@
       "AbmmHasan\\WebFace\\": "src/"
     }
   },
+  "bin": [
+    "webface",
+    "bin/command"
+  ],
+  "scripts": {
+    "webface": "php webface"
+  },
   "minimum-stability": "dev",
   "prefer-stable": true,
   "require": {

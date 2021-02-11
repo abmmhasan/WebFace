@@ -151,12 +151,13 @@ class BaseRoute extends BaseRequest
      * @param false $view
      * @return bool
      */
-    protected function handle($routes, $view = false)
+    protected function handle($routes, $method, $view = false)
     {
         // Current Relative URL : remove rewrite base path from it (allows running the router in a sub directory)
         $uri = '/' . trim(substr($this->url->path, strlen($this->serverBasePath)), '/');
         // Check if any exact route exist
         if (isset($routes[$uri])) {
+            Storage::setCurrentRoute($method . ' ' . $uri);
             if (!$this->routeMiddlewareCheck($routes[$uri]['before'], $this->globalMiddleware['route'])) {
                 return true;
             }
@@ -168,6 +169,7 @@ class BaseRoute extends BaseRequest
         foreach ($routes as $storedPattern => $route) {
             $pattern = preg_replace('/\/{(.*?)}/', '/(.*?)', $storedPattern);
             if (preg_match_all('#^' . $pattern . '$#', $uri, $matches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER)) {
+                Storage::setCurrentRoute($method . ' ' . $pattern);
                 if (!$this->routeMiddlewareCheck($route['before'], $this->globalMiddleware['route'])) {
                     return true;
                 }
@@ -207,10 +209,12 @@ class BaseRoute extends BaseRequest
 
     private function routeMiddlewareCheck($check, $collection)
     {
-        if (empty($check) || empty($collection)) {
-            return true;
-        }
         $eligible = true;
+        // ToDo: preTag check
+
+        if (empty($check) || empty($collection)) {
+            return $eligible;
+        }
         if (is_array($collection) && count($collection)) {
             foreach ($check as $middleware) {
                 $parameterSeparation = explode(':', $middleware, 2);

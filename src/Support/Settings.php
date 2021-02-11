@@ -6,6 +6,11 @@ namespace AbmmHasan\WebFace\Support;
 
 class Settings
 {
+    /**
+     * Set Controller Namespace
+     *
+     * @var string
+     */
     public static string $base_namespace = 'App\HTTP\Controller';
 
     /**
@@ -14,6 +19,20 @@ class Settings
      * @var string
      */
     public static string $base_path = '';
+
+    /**
+     * Check Stored Etag before controller execution
+     *
+     * @var bool
+     */
+    public static bool $enable_pre_tag = false;
+
+    /**
+     * PreTag resource file location
+     *
+     * @var bool
+     */
+    public static string $pre_tag_file_location = '';
 
     /**
      * Path to route cache file

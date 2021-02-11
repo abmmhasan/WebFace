@@ -14,9 +14,9 @@ if (!function_exists('cacheRoute')) {
     /**
      * Send response
      */
-    function cacheRoute()
+    function cacheRoute($route_directory)
     {
-        print_r($_SERVER);
+        AbmmHasan\WebFace\Support\Storage::cacheRoute($route_directory);
     }
 }
 
