@@ -18,8 +18,11 @@
     }
   },
   "bin": [
-    "webface"
+    "bin/webface"
   ],
+  "scripts": {
+    "webface": "webface"
+  },
   "minimum-stability": "dev",
   "prefer-stable": true,
   "require": {
