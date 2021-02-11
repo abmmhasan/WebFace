@@ -20,9 +20,6 @@
   "bin": [
     "webface"
   ],
-  "scripts": {
-    "web-face": "php webface"
-  },
   "minimum-stability": "dev",
   "prefer-stable": true,
   "require": {
