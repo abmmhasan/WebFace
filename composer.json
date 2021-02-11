@@ -18,11 +18,10 @@
     }
   },
   "bin": [
-    "webface",
-    "bin/command"
+    "webface"
   ],
   "scripts": {
-    "webface": "php webface"
+    "web-face": "php webface"
   },
   "minimum-stability": "dev",
   "prefer-stable": true,

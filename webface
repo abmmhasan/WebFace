@@ -1,3 +1,4 @@
 #!/usr/bin/env php
 <?php
-include_once('bin/command');
+echo 'TEST';
+//include_once('bin/command');
