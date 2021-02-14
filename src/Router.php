@@ -100,6 +100,9 @@ final class Router extends BaseRoute
      */
     public function run($flash = true)
     {
+        if (php_sapi_name() === 'cli') {
+            return true;
+        }
         $this->runMiddleware($this->globalMiddleware['before'] ?? []);
         // Handle all routes
         $numHandled = 0;
@@ -111,7 +114,7 @@ final class Router extends BaseRoute
             }
         } else {
             if (isset($this->routes[$this->method])) {
-                $numHandled = $this->handle($this->routes[$this->method],$this->method);
+                $numHandled = $this->handle($this->routes[$this->method], $this->method);
             }
             if (!$numHandled && isset($this->routes["ANY"])) {
                 $numHandled = $this->handle($this->routes["ANY"], 'ANY');

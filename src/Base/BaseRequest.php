@@ -47,14 +47,14 @@ class BaseRequest
 
     private function getMethod()
     {
-        $requestMethod = strtoupper($_SERVER['REQUEST_METHOD']) ?? 'GET';
+        $requestMethod = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
         if (!in_array($requestMethod, $this->methods)) {
             throw new BadMethodCallException("Invalid method override {$requestMethod}.");
         }
         $this->originalMethod = $requestMethod;
         if ($requestMethod === 'HEAD') {
             $requestMethod = 'GET';
-        } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        } elseif ($requestMethod === 'POST') {
             if (isset($this->headers['X-HTTP-Method-Override'])) {
                 $requestMethod = $this->headers['X-HTTP-Method-Override'];
             } elseif (isset($this->post['_method'])) {
@@ -67,7 +67,7 @@ class BaseRequest
     private function clientInfo()
     {
         return [
-            'ip' => $_SERVER['REMOTE_ADDR'],
+            'ip' => $_SERVER['REMOTE_ADDR'] ?? null,
             'proxy_ip' => ClientIP::get(),
             'referer' => $_SERVER['HTTP_REFERER'] ?? null,
             'ua' => [
@@ -80,7 +80,7 @@ class BaseRequest
     private function userAgentInfo()
     {
         if (ini_get('browscap')) {
-            return get_browser(null, true);
+            return @get_browser(null, true) ?? [];
         }
         return [];
     }

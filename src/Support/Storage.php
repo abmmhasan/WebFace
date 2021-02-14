@@ -11,10 +11,10 @@ class Storage
     public static $response_throw = [];
     private static $route_in_operation = '/';
 
-    public static function cacheRoute(string $route_dir)
+    public static function cache()
     {
         $router = new Router();
-        foreach (glob($route_dir . '*.php') as $filename) {
+        foreach (glob(Settings::$resource_path . '*.php') as $filename) {
             require_once($filename);
         }
         $content = self::removeClosures($router->getRoutes());

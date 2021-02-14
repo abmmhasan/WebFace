@@ -35,6 +35,26 @@ class BaseRoute extends BaseRequest
     ];
     public $cacheLoaded = false;
 
+    public function __construct()
+    {
+        $this->loadJsonSettings();
+        parent::__construct();
+    }
+
+    private function loadJsonSettings()
+    {
+        $resolve = php_sapi_name() === 'cli' ? './' : '..';
+        $path = realpath($resolve) . DIRECTORY_SEPARATOR;
+        if (file_exists($file = $path . 'webface.json')) {
+            $json = json_decode(file_get_contents($file));
+            if (!empty($json)) {
+                foreach ($json as $item => $value) {
+                    Settings::$$item = $value;
+                }
+            }
+        }
+    }
+
     /**
      * @param $path
      * @return bool

@@ -35,6 +35,13 @@ class Settings
     public static string $pre_tag_file_location = '';
 
     /**
+     * Path to route resources
+     *
+     * @var string
+     */
+    public static string $resource_path = '';
+
+    /**
      * Path to route cache file
      *
      * @var string

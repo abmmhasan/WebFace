@@ -1,4 +1,8 @@
 #!/usr/bin/env php
 <?php
-echo 'TEST';
-//include_once('bin/command');
+if (php_sapi_name() !== 'cli') {
+    exit;
+}
+require_once(realpath('./vendor/autoload.php'));
+\AbmmHasan\WebFace\Support\Storage::cache();
+exit();
