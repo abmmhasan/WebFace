@@ -10,13 +10,14 @@ if (!function_exists('responseFlush')) {
     }
 }
 
-if (!function_exists('cacheRoute')) {
+if (!function_exists('projectPath')) {
     /**
      * Send response
      */
-    function cacheRoute($route_directory)
+    function projectPath()
     {
-        AbmmHasan\WebFace\Support\Storage::cacheRoute($route_directory);
+        $resolve = php_sapi_name() === 'cli' ? './' : '..';
+        return realpath($resolve) . DIRECTORY_SEPARATOR;
     }
 }
 

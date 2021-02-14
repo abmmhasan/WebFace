@@ -43,9 +43,7 @@ class BaseRoute extends BaseRequest
 
     private function loadJsonSettings()
     {
-        $resolve = php_sapi_name() === 'cli' ? './' : '..';
-        $path = realpath($resolve) . DIRECTORY_SEPARATOR;
-        if (file_exists($file = $path . 'webface.json')) {
+        if (file_exists($file = projectPath() . 'webface.json')) {
             $json = json_decode(file_get_contents($file));
             if (!empty($json)) {
                 foreach ($json as $item => $value) {

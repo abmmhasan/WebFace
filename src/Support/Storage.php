@@ -18,7 +18,7 @@ class Storage
             require_once($filename);
         }
         $content = self::removeClosures($router->getRoutes());
-        file_put_contents(
+        return file_put_contents(
             Settings::$cache_path,
             '<?php return ' . var_export($content, true) . ';' . PHP_EOL,
             LOCK_EX

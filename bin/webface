@@ -4,5 +4,10 @@ if (php_sapi_name() !== 'cli') {
     exit;
 }
 require_once(realpath('./vendor/autoload.php'));
-\AbmmHasan\WebFace\Support\Storage::cache();
+$written = \AbmmHasan\WebFace\Support\Storage::cache();
+if ($written) {
+    echo "Route cached successfully ({$written} Bytes written)!";
+} else {
+    echo "Caching failed";
+}
 exit();
