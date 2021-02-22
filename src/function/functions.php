@@ -1,5 +1,8 @@
 <?php
 
+use AbmmHasan\WebFace\Support\Settings;
+use AbmmHasan\WebFace\Router;
+
 if (!function_exists('responseFlush')) {
     /**
      * Send response
@@ -12,12 +15,32 @@ if (!function_exists('responseFlush')) {
 
 if (!function_exists('projectPath')) {
     /**
-     * Send response
+     * Get current project path
      */
     function projectPath()
     {
         $resolve = php_sapi_name() === 'cli' ? './' : '..';
         return realpath($resolve) . DIRECTORY_SEPARATOR;
+    }
+}
+
+if (!function_exists('webface')) {
+    /**
+     * Initiate router
+     *
+     * @param array $middlewareList
+     * @param bool $loadCache
+     */
+    function webface($middlewareList = [], $loadCache = true)
+    {
+        $router = new Router($middlewareList, $loadCache);
+        if (!$router->cacheLoaded) {
+            $loadFrom = projectPath() . Settings::$resource_path;
+            foreach (glob($loadFrom . '*.php') as $filename) {
+                require_once($filename);
+            }
+        }
+        $router->run();
     }
 }
 

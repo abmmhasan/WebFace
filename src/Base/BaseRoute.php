@@ -59,8 +59,9 @@ class BaseRoute extends BaseRequest
      */
     protected function loadCache()
     {
-        if (file_exists(Settings::$cache_path)) {
-            $this->routes = require(Settings::$cache_path);
+        $cachePath = projectPath() . Settings::$cache_path;
+        if (file_exists($cachePath)) {
+            $this->routes = require($cachePath);
             return true;
         }
         return false;
