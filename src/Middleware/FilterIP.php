@@ -4,7 +4,7 @@
 namespace AbmmHasan\WebFace\Middleware;
 
 
-use AbmmHasan\WebFace\Utility\ClientIP;
+use AbmmHasan\WebFace\Utility\EndUser;
 
 class FilterIP
 {
@@ -13,7 +13,7 @@ class FilterIP
 
     public function handle()
     {
-        $clientIP = ClientIP::get() ?? $_SERVER['REMOTE_ADDR'];
+        $clientIP = EndUser::ip() ?? $_SERVER['REMOTE_ADDR'];
         return !empty($clientIP) && !$this->isForbidden($clientIP) && $this->isAllowed($clientIP);
     }
 
@@ -22,7 +22,7 @@ class FilterIP
         if (empty($this->forbidden)) {
             return false;
         }
-        return ClientIP::check($this->forbidden, $clientIP);
+        return EndUser::checkIP($this->forbidden, $clientIP);
     }
 
     private function isAllowed($clientIP)
@@ -30,7 +30,7 @@ class FilterIP
         if (empty($this->allowed)) {
             return true;
         }
-        return ClientIP::check($this->allowed, $clientIP);
+        return EndUser::checkIP($this->allowed, $clientIP);
     }
 
 }

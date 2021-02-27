@@ -4,10 +4,11 @@
 namespace AbmmHasan\WebFace\Utility;
 
 
-
 final class URL
 {
     private static $url;
+    private static $method;
+    private static $methods = ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH'];
 
     /**
      * Get current URL (parsed)
@@ -36,6 +37,32 @@ final class URL
             $parts[PHP_URL_HOST] = null;
         }
         return self::$url = new Arrject(['url' => $full_url, 'base' => $base_path] + $parts);
+    }
+
+    public static function getMethod()
+    {
+        if (self::$method) {
+            return self::$method;
+        }
+        $requestMethod = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+        if (!in_array($requestMethod, self::$methods)) {
+            throw new BadMethodCallException("Invalid method override {$requestMethod}.");
+        }
+        $originalMethod = $requestMethod;
+        if ($requestMethod === 'HEAD') {
+            $requestMethod = 'GET';
+        } elseif ($requestMethod === 'POST') {
+            $headers = Headers::all();
+            if (isset($headers['X-HTTP-Method-Override'])) {
+                $requestMethod = $headers['X-HTTP-Method-Override'];
+            } elseif (isset($_POST['_method'])) {
+                $requestMethod = $_POST['_method'];
+            }
+        }
+        return self::$method = new Arrject([
+            'main' => strtoupper($originalMethod),
+            'converted' => strtoupper($requestMethod)
+        ]);
     }
 
     private static function getScheme()

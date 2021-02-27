@@ -4,17 +4,36 @@
 namespace AbmmHasan\WebFace\Utility;
 
 
-final class ClientIP
+final class EndUser
 {
     private static $checkedIps = [];
     private static $clientIp;
+    private static $info;
+
+
+    public static function info()
+    {
+        if (self::$info) {
+            return self::$info;
+        }
+
+        return self::$info = new Arrject([
+            'ip' => $_SERVER['REMOTE_ADDR'] ?? null,
+            'proxy_ip' => self::ip(),
+            'referer' => $_SERVER['HTTP_REFERER'] ?? null,
+            'ua' => [
+                'agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
+                'system' => self::userAgentInfo(),
+            ]
+        ]);
+    }
 
     /**
      * Get Client IP
      *
      * @return string
      */
-    public static function get()
+    public static function ip()
     {
         if (self::$clientIp) {
             return self::$clientIp;
@@ -61,10 +80,10 @@ final class ClientIP
      *
      * @return bool Whether the ClientIP is valid
      */
-    public static function check($ips, $checkIP = null)
+    public static function checkIP($ips, $checkIP = null)
     {
         $ips = is_array($ips) ? $ips : [$ips];
-        self::get();
+        self::ip();
 
         $check = $checkIP ?? self::$clientIp;
 
@@ -209,5 +228,13 @@ final class ClientIP
         }
 
         return self::$checkedIps[$cacheKey] = true;
+    }
+
+    private static function userAgentInfo()
+    {
+        if (ini_get('browscap')) {
+            return @get_browser(null, true) ?? [];
+        }
+        return [];
     }
 }
