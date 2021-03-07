@@ -8,7 +8,7 @@ use ArrayIterator;
 use JsonSerializable;
 use Traversable;
 
-final class Arrject implements \ArrayAccess, \Iterator, \Countable
+final class Arrject extends Utility implements \ArrayAccess, \Iterator, \Countable
 {
     /**
      * Collection data.

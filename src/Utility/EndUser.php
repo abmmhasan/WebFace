@@ -4,28 +4,28 @@
 namespace AbmmHasan\WebFace\Utility;
 
 
-final class EndUser
+final class EndUser extends Utility
 {
     private static $checkedIps = [];
     private static $clientIp;
     private static $info;
 
 
-    public static function info()
+    public static function info($key = null)
     {
-        if (self::$info) {
-            return self::$info;
+        if (!isset(self::$info)) {
+            self::$info = new Arrject([
+                'ip' => $_SERVER['REMOTE_ADDR'] ?? null,
+                'proxy_ip' => self::ip(),
+                'referer' => $_SERVER['HTTP_REFERER'] ?? null,
+                'ua' => [
+                    'agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
+                    'system' => self::userAgentInfo(),
+                ]
+            ]);
         }
 
-        return self::$info = new Arrject([
-            'ip' => $_SERVER['REMOTE_ADDR'] ?? null,
-            'proxy_ip' => self::ip(),
-            'referer' => $_SERVER['HTTP_REFERER'] ?? null,
-            'ua' => [
-                'agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
-                'system' => self::userAgentInfo(),
-            ]
-        ]);
+        return self::getValue(self::$info, $key);
     }
 
     /**
@@ -35,7 +35,7 @@ final class EndUser
      */
     public static function ip()
     {
-        if (self::$clientIp) {
+        if (isset(self::$clientIp)) {
             return self::$clientIp;
         }
 
