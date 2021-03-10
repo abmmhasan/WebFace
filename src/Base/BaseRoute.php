@@ -6,8 +6,9 @@ namespace AbmmHasan\WebFace\Base;
 
 use AbmmHasan\WebFace\Support\Settings;
 use AbmmHasan\WebFace\Support\Storage;
+use AbmmHasan\WebFace\Utility\URL;
 
-class BaseRoute extends BaseRequest
+abstract class BaseRoute
 {
     protected $routes = [];
     protected $baseRoute = [];
@@ -38,7 +39,6 @@ class BaseRoute extends BaseRequest
     public function __construct()
     {
         $this->loadJsonSettings();
-        parent::__construct();
     }
 
     private function loadJsonSettings()
@@ -173,7 +173,7 @@ class BaseRoute extends BaseRequest
     protected function handle($routes, $method, $view = false)
     {
         // Current Relative URL : remove rewrite base path from it (allows running the router in a sub directory)
-        $uri = '/' . trim(substr($this->url->path, strlen($this->serverBasePath)), '/');
+        $uri = '/' . trim(substr(URL::get('path'), strlen($this->serverBasePath)), '/');
         // Check if any exact route exist
         if (isset($routes[$uri])) {
             Storage::setCurrentRoute($method . ' ' . $uri);

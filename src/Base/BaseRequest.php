@@ -32,7 +32,6 @@ abstract class BaseRequest
 
     public function __construct()
     {
-        $method = URL::getMethod();
         $this->server = RequestAsset::server();
         $this->cookie = RequestAsset::cookie();
         $this->headers = Headers::all();

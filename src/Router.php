@@ -7,6 +7,7 @@ use AbmmHasan\WebFace\Base\BaseRequest;
 use AbmmHasan\WebFace\Base\BaseRoute;
 use AbmmHasan\WebFace\Support\Settings;
 use AbmmHasan\WebFace\Support\Storage;
+use AbmmHasan\WebFace\Utility\URL;
 use BadMethodCallException;
 
 /**
@@ -21,7 +22,7 @@ final class Router extends BaseRoute
     public function __construct(array $middleware = [], bool $loadCache = true)
     {
         parent::__construct();
-        $this->serverBasePath = empty(Settings::$base_path) ? $this->url->base : Settings::$base_path;
+        $this->serverBasePath = empty(Settings::$base_path) ? URL::get('base') : Settings::$base_path;
         $this->namespace = Settings::$base_namespace;
         $this->globalMiddleware = $middleware;
         if ($loadCache && Settings::$cache_load && !empty(Settings::$cache_path)) {
@@ -106,15 +107,16 @@ final class Router extends BaseRoute
         $this->runMiddleware($this->globalMiddleware['before'] ?? []);
         // Handle all routes
         $numHandled = 0;
-        if ($this->xhr) {
-            if ($this->method === 'GET' && isset($this->routes["AJAX"])) {
+        $method = URL::getMethod('converted');
+        if (URL::getMethod('isAjax')) {
+            if ($method === 'GET' && isset($this->routes["AJAX"])) {
                 $numHandled = $this->handle($this->routes["AJAX"], 'AJAX');
-            } elseif (isset($this->routes["X" . $this->method])) {
-                $numHandled = $this->handle($this->routes["X" . $this->method], "X" . $this->method);
+            } elseif (isset($this->routes["X" . $method])) {
+                $numHandled = $this->handle($this->routes["X" . $method], "X" . $method);
             }
         } else {
-            if (isset($this->routes[$this->method])) {
-                $numHandled = $this->handle($this->routes[$this->method], $this->method);
+            if (isset($this->routes[$method])) {
+                $numHandled = $this->handle($this->routes[$method], $method);
             }
             if (!$numHandled && isset($this->routes["ANY"])) {
                 $numHandled = $this->handle($this->routes["ANY"], 'ANY');

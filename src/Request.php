@@ -23,11 +23,6 @@ final class Request extends BaseRequest
         'xhr',
     ];
 
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
     /**
      *
      * Read-only access to property objects.
@@ -55,7 +50,7 @@ final class Request extends BaseRequest
     {
         if (in_array($name, $this->allowed)) {
             if ($arg) {
-                return $this->$name->$arg;
+                return $this->$name->$arg ?? null;
             }
             return $this->$name;
         }
