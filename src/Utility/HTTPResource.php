@@ -4,7 +4,7 @@
 namespace AbmmHasan\WebFace\Utility;
 
 
-class HTTPResource extends Utility
+final class HTTPResource extends Utility
 {
     public static $responseVersion = '1.1';
 

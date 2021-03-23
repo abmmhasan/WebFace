@@ -45,7 +45,6 @@ abstract class BaseRequest
         $this->query = RequestAsset::query();
         $this->files = RequestAsset::files();
         $this->request = new Arrject(self::getRequest());
-        $this->base = str_replace(['\\', ' '], ['/', '%20'], dirname($_SERVER['SCRIPT_NAME']));
         $this->client = EndUser::info();
         $this->xhr = URL::getMethod('isAjax');
     }

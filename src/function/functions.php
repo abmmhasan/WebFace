@@ -44,6 +44,19 @@ if (!function_exists('webface')) {
     }
 }
 
+if (!function_exists('route')) {
+    /**
+     * Initiate router
+     *
+     * @param array $middlewareList
+     * @param bool $loadCache
+     */
+    function route($path)
+    {
+
+    }
+}
+
 if (!function_exists('httpDate')) {
     /**
      * Converts any recognizable date format to an HTTP date.

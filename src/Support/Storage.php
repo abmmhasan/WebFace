@@ -27,7 +27,7 @@ class Storage
 
     public static function setCurrentRoute($route = null)
     {
-        self::$route_in_operation = str_ireplace('(.*?)', '?', $route);
+        self::$route_in_operation = str_replace('(.*?)', '?', $route);
     }
 
     public static function getCurrentRoute()

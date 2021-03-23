@@ -98,7 +98,8 @@ final class Headers extends Utility
     public static function content($key = null)
     {
         if (!isset(self::$content)) {
-            $parts = explode(';', strtolower($_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? ''));
+            self::all();
+            $parts = explode(';', strtolower(self::$headers['Content-Type'] ?? ''));
             $type = array_shift($parts);
             $charset = null;
             if ($parts) {
@@ -110,14 +111,12 @@ final class Headers extends Utility
                     }
                 }
             }
-            $length = $_SERVER['CONTENT_LENGTH'] ?? $_SERVER['HTTP_CONTENT_LENGTH'] ?? 0;
-            $md5 = isset($_SERVER['HTTP_CONTENT_MD5']) ? strtolower($_SERVER['HTTP_CONTENT_MD5']) : null;
             self::$content = new Arrject([
                 'parts' => $parts,
                 'type' => $type,
                 'charset' => $charset,
-                'length' => $length,
-                'md5' => $md5
+                'length' => self::$headers['Content-Length'] ?? 0,
+                'md5' => strtolower(self::$headers['Content-Md5'] ?? null)
             ]);
         }
         return self::getValue(self::$content, $key);

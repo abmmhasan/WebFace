@@ -4,7 +4,7 @@
 namespace AbmmHasan\WebFace\Utility;
 
 
-class RequestAsset extends Utility
+final class RequestAsset extends Utility
 {
     private static $query;
     private static $post;
