@@ -16,7 +16,6 @@ abstract class BaseRequest
     protected $post;
     protected $query;
     protected $server;
-    protected $base;
     protected $client;
     protected $headers;
     protected $method;

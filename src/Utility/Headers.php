@@ -126,7 +126,7 @@ final class Headers extends Utility
     {
         if (!isset(self::$dependency)) {
             self::all();
-            self::$dependency = new Arrject([
+            $asset = [
                 'if_match' => preg_split(
                     '/\s*,\s*/',
                     self::$headers['If-Match'] ?? null,
@@ -143,8 +143,19 @@ final class Headers extends Utility
                     date(DATE_ATOM, strtotime(self::$headers['If-Modified-Since'])) : null,
                 'if_unmodified_since' => !empty(self::$headers['If-Unmodified-Since']) ?
                     date(DATE_ATOM, strtotime(self::$headers['If-Unmodified-Since'])) : null,
+                'range' => null,
                 'prefer_safe' => (self::$headers['Prefer'] ?? '') === 'safe' && URL::get()->scheme === 'https'
-            ]);
+            ];
+            if (isset(self::$headers['Range'])) {
+                $range = explode('=', str_replace(" ", "", self::$headers['Range']), 2);
+                if (count($range) === 2) {
+                    $asset['range'] = [
+                        'unit' => $range[0],
+                        'span' => str_getcsv($range[1])
+                    ];
+                }
+            }
+            self::$dependency = new Arrject($asset);
         }
         return self::getValue(self::$dependency, $key);
     }

@@ -21,13 +21,6 @@ class Settings
     public static string $base_path = '';
 
     /**
-     * Check Stored Etag before controller execution
-     *
-     * @var bool
-     */
-    public static bool $enable_pre_tag = false;
-
-    /**
      * PreTag resource file location
      *
      * @var bool

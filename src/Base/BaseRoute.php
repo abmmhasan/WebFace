@@ -32,7 +32,8 @@ abstract class BaseRoute
         'XPOST',
         'XPUT',
         'XDELETE',
-        'XPATCH'
+        'XPATCH',
+        'VIEW'
     ];
     public $cacheLoaded = false;
 
@@ -118,7 +119,16 @@ abstract class BaseRoute
             }
             $routeInfo['fn'] = $callback['uses'];
         }
+        $routeInfo['name'] ??= implode('.',
+            array_filter(
+                explode('/',
+                    str_replace(['{', '}'], '', $pattern)
+                )
+            )
+        );
         foreach ($methods as $method) {
+            $routeResource['named'][$routeInfo['name']] ??= [$method, $pattern];
+            $routeResource['list'][] = $pattern;
             $routeResource[strtoupper($method)][$pattern] = $routeInfo;
         }
     }
@@ -188,7 +198,7 @@ abstract class BaseRoute
         foreach ($routes as $storedPattern => $route) {
             $pattern = preg_replace('/\/{(.*?)}/', '/(.*?)', $storedPattern);
             if (preg_match_all('#^' . $pattern . '$#', $uri, $matches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER)) {
-                Storage::setCurrentRoute($method . ' ' . $pattern);
+                Storage::setCurrentRoute($method . ' ' . $storedPattern);
                 if (!$this->routeMiddlewareCheck($route['before'], $this->globalMiddleware['route'])) {
                     return true;
                 }
@@ -229,8 +239,6 @@ abstract class BaseRoute
     private function routeMiddlewareCheck($check, $collection)
     {
         $eligible = true;
-        // ToDo: preTag check
-
         if (empty($check) || empty($collection)) {
             return $eligible;
         }

@@ -24,6 +24,16 @@ if (!function_exists('projectPath')) {
     }
 }
 
+if (!function_exists('setPreTag')) {
+    /**
+     * Get current project path
+     */
+    function setPreTag($path, $tag)
+    {
+        return (new \AbmmHasan\WebFace\Middleware\PreTag())->set($path, $tag);
+    }
+}
+
 if (!function_exists('webface')) {
     /**
      * Initiate router

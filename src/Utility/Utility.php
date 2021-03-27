@@ -4,7 +4,7 @@
 namespace AbmmHasan\WebFace\Utility;
 
 
-class Utility
+abstract class Utility
 {
     /**
      * @param $asset
