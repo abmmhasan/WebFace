@@ -29,7 +29,7 @@ class PreTag
         if (!empty($this->asset)) {
             return file_put_contents(
                 projectPath() . Settings::$pre_tag_file_location,
-                json_encode($this->asset),LOCK_EX
+                json_encode($this->asset), LOCK_EX
             );
         }
         return false;
@@ -45,20 +45,24 @@ class PreTag
     private function setByPath($path, $tag)
     {
         $list = Storage::getRouteResource('list');
-        if (empty($list) || !isset($list[$path])) {
+        if (empty($list) || !in_array($path, $list)) {
             throw new \Exception("Route path '{$path}' invalid!");
         }
+
         $this->asset[$path] = $tag;
     }
 
     private function compareDependency()
     {
-        if (is_null($this->asset) || !isset($this->asset[Storage::getCurrentRoute()])) {
+        $route = explode(" ", Storage::getCurrentRoute(), 2);
+        if (is_null($this->asset) || !isset($this->asset[$route[1]])) {
             return true;
         }
         $dependencies = Headers::responseDependency();
         $requestMethod = URL::getMethod('converted');
-        if (!empty($dependencies['if_none_match']) && in_array($requestMethod, ['GET', 'HEAD']) && in_array($this->asset[Storage::getCurrentRoute()], $dependencies['if_none_match'])) {
+        if (!empty($dependencies['if_none_match']) &&
+            in_array($requestMethod, ['GET', 'HEAD']) &&
+            in_array($this->asset[$route[1]], $dependencies['if_none_match'])) {
             return [
                 'status' => 304,
                 'message' => 'Resource Intact'

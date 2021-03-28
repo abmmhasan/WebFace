@@ -26,16 +26,13 @@ class Storage
     public static function getRouteResource($key)
     {
         self::loadRoute();
-        if (isset(self::$route_resource[$key])) {
-            return $key;
-        }
-        return null;
+        return self::$route_resource[$key] ?? null;
     }
 
     private static function loadRoute()
     {
         if (!isset(self::$route_resource)) {
-            $router = new Router();
+            $router = new Router([], false);
             foreach (glob(projectPath() . Settings::$resource_path . '*.php') as $filename) {
                 require_once($filename);
             }
@@ -57,6 +54,10 @@ class Storage
     {
         $filtered = [];
         foreach ($content as $method => $routeList) {
+            if (in_array($method, ['named', 'list'])) {
+                $filtered[$method] = $routeList;
+                continue;
+            }
             foreach ($routeList as $pattern => $route) {
                 if (is_string($route['fn'])) {
                     $filtered[$method][$pattern] = $route;
