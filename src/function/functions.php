@@ -9,7 +9,7 @@ if (!function_exists('responseFlush')) {
      */
     function responseFlush()
     {
-        AbmmHasan\WebFace\Response::instance()->send();
+        (new \AbmmHasan\WebFace\Base\BaseResponse)->helloWorld();
     }
 }
 

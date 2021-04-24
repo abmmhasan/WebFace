@@ -43,11 +43,10 @@ final class URL extends Utility
     public static function getMethod($key = null)
     {
         if (!isset(self::$method)) {
-            $requestMethod = strtoupper(RequestAsset::server('REQUEST_METHOD') ?? 'GET');
+            $originalMethod = $requestMethod = strtoupper(RequestAsset::server('REQUEST_METHOD') ?? 'GET');
             if (!in_array($requestMethod, self::$methods)) {
                 throw new BadMethodCallException("Invalid method override {$requestMethod}.");
             }
-            $originalMethod = $requestMethod;
             if ($requestMethod === 'HEAD') {
                 $requestMethod = 'GET';
             } elseif ($requestMethod === 'POST') {
@@ -59,7 +58,7 @@ final class URL extends Utility
                 }
             }
             self::$method = new Arrject([
-                'main' => strtoupper($originalMethod),
+                'main' => $originalMethod,
                 'converted' => strtoupper($requestMethod),
                 'isAjax' => RequestAsset::server('HTTP_X_REQUESTED_WITH') === 'XMLHttpRequest'
             ]);

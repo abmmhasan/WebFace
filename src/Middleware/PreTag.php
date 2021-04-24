@@ -64,8 +64,7 @@ class PreTag
             in_array($requestMethod, ['GET', 'HEAD']) &&
             in_array($this->asset[$route[1]], $dependencies['if_none_match'])) {
             return [
-                'status' => 304,
-                'message' => 'Resource Intact'
+                'code' => 304
             ];
         }
         return true;

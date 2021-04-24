@@ -5,6 +5,7 @@ namespace AbmmHasan\WebFace;
 
 use AbmmHasan\WebFace\Base\BaseRequest;
 use AbmmHasan\WebFace\Base\BaseRoute;
+use AbmmHasan\WebFace\Support\ResponseDepot;
 use AbmmHasan\WebFace\Support\Settings;
 use AbmmHasan\WebFace\Support\Storage;
 use AbmmHasan\WebFace\Utility\URL;
@@ -125,13 +126,13 @@ final class Router extends BaseRoute
 
         // If no route was handled, trigger the 404 (if any)
         if (!$numHandled) {
-            Storage::$response_throw['code'] = 404;
+            ResponseDepot::$code = 404;
         }
         $this->runMiddleware($this->globalMiddleware['after'] ?? []);
         if ($flash) {
             responseFlush();
         }
-        return Storage::$response_throw;
+        return ResponseDepot::$code;
     }
 
     /**

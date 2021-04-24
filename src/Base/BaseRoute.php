@@ -4,6 +4,7 @@
 namespace AbmmHasan\WebFace\Base;
 
 
+use AbmmHasan\WebFace\Support\ResponseDepot;
 use AbmmHasan\WebFace\Support\Settings;
 use AbmmHasan\WebFace\Support\Storage;
 use AbmmHasan\WebFace\Utility\URL;
@@ -248,8 +249,11 @@ abstract class BaseRoute
                 if (isset($collection[$parameterSeparation[0]])) {
                     $eligible = $this->invokeMiddleware($collection[$parameterSeparation[0]], $parameterSeparation[1] ?? '');
                     if (!is_bool($eligible) || $eligible !== true) {
-                        Storage::$response_throw['code'] = $eligible['status'] ?? 403;
-                        Storage::$response_throw['message'] = $eligible['message'] ?? $eligible;
+                        ResponseDepot::$code = $eligible['status'] ?? 403;
+                        ResponseDepot::$content = [
+                            'status' => 'failed',
+                            'message' => $eligible['message'] ?? (is_string($eligible) ? $eligible : 'Bad Request')
+                        ];
                         return false;
                     }
                 }
