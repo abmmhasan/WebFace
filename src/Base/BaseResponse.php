@@ -22,56 +22,13 @@ use JsonSerializable;
 class BaseResponse extends BaseRequest
 {
     /**
-     * @var BaseResponse
-     */
-    protected static $instance;
-    /**
-     * @var string
-     */
-    protected $responseStatus;
-    /**
-     * @var int
-     */
-    protected $responseCode;
-    /**
-     * @var string
-     */
-    protected $charset;
-    /**
-     * @var array|string[]
-     */
-    protected $applicableFormat = [
-        'render',
-        'json',
-        'xml',
-        'csv'
-    ];
-    /**
-     * @var
-     */
-    protected $responseContent;
-    /**
-     * @var array
-     */
-    protected $responseHeaders;
-    /**
-     * @var array
-     */
-    protected $responseCache;
-    /**
-     * @var array
-     */
-    protected $responseCookies = [];
-
-    protected $sendResponseBody = true;
-
-    /**
      * Checks if eligible header found
      *
      * This is still experimental
      *
      * @param $type
-     * @return bool
+     * @param bool $all
+     * @return mixed
      */
     private function getTypeHeader($type, $all = false)
     {
@@ -146,7 +103,7 @@ class BaseResponse extends BaseRequest
      *
      * @return bool
      */
-    private function notModified()
+    private function notModified(): bool
     {
         $notModified = false;
         if (URL::get('converted') === 'GET') {
@@ -172,7 +129,7 @@ class BaseResponse extends BaseRequest
      *
      * @return bool
      */
-    private function emptyResponse()
+    private function emptyResponse(): bool
     {
         $responseCode = ResponseDepot::$code;
         if (($responseCode >= 100 && $responseCode < 200) || in_array($responseCode, [204, 304])) {
@@ -203,14 +160,14 @@ class BaseResponse extends BaseRequest
      *
      * RFC 2616
      *
-     * @return bool
+     * @return void
      */
-    protected function prepare()
+    private function prepare(): void
     {
         $isUnmodified = $this->notModified();
         $isEmpty = $this->emptyResponse();
         if ($isEmpty || $isUnmodified) {
-            return true;
+            return;
         }
         $setHeaders = ResponseDepot::getHeader();
         // Content-type based on the Request
@@ -240,7 +197,6 @@ class BaseResponse extends BaseRequest
         if (isset($setHeaders['Transfer-Encoding'])) {
             ResponseDepot::setHeader('Content-Length', '', false);
         }
-        return true;
     }
 
     /**
@@ -248,6 +204,7 @@ class BaseResponse extends BaseRequest
      *
      * RFC 7231
      *
+     * @param $cacheVariables
      * @return bool
      */
     public function isSharedCacheable($cacheVariables): bool
@@ -262,11 +219,13 @@ class BaseResponse extends BaseRequest
             return false;
         }
 
+        if (isset($cacheVariables['Last-Modified'])) {
+            return true;
+        }
+
         $maxAge = $cacheVariables['control']['s-maxage'] ?? $cacheVariables['control']['max-age'] ?? null;
 
-        $fresh = (null !== $maxAge ? $maxAge : null) > 0;
-
-        return isset($this->responseCache['Last-Modified']) || $fresh;
+        return (null !== $maxAge ? $maxAge : null) > 0;
     }
 
     /**
@@ -308,7 +267,7 @@ class BaseResponse extends BaseRequest
      *
      * RFC 7231, RFC 7234, RFC 8674
      *
-     * @return bool
+     * @return void
      */
     private function prepareCacheHeader()
     {
@@ -334,7 +293,6 @@ class BaseResponse extends BaseRequest
         foreach ($cacheVariables as $label => $value) {
             ResponseDepot::setHeader($label, $value);
         }
-        return true;
     }
 
     private function contentParser($content)
