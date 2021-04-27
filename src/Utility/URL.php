@@ -27,14 +27,16 @@ final class URL extends Utility
                 }
             }
             $request_uri = RequestAsset::server('REQUEST_URI');
-            $full_url = self::getScheme() . $host . ':' . $port . $request_uri;
+            $scheme = self::getScheme();
+            $full_url = $scheme . $host . ':' . $port . $request_uri;
             $parts = parse_url($full_url);
             if (is_null(RequestAsset::server('HTTP_HOST')) && is_null(RequestAsset::server('SERVER_NAME'))) {
                 $parts[PHP_URL_HOST] = null;
             }
             self::$url = new Arrject([
                     'url' => $full_url,
-                    'base' => str_replace(['\\', ' '], ['/', '%20'], dirname(RequestAsset::server('SCRIPT_NAME')))
+                    'base' => $base = str_replace(['\\', ' '], ['/', '%20'], dirname(RequestAsset::server('SCRIPT_NAME'))),
+                    'prefix' => $scheme . $host . ':' . $port . $base,
                 ] + $parts);
         }
         return self::getValue(self::$url, $key);

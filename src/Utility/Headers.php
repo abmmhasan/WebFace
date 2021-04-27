@@ -193,9 +193,6 @@ final class Headers extends Utility
 
     private static function compareWildcard($types)
     {
-        if (count($types) === 1) {
-            return 0;
-        }
-        return ($types[0] === '*') - ($types[1] === '*');
+        return count($types) === 1 ? 0 : ($types[0] === '*') - ($types[1] === '*');
     }
 }

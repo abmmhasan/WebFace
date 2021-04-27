@@ -106,7 +106,7 @@ class BaseResponse extends BaseRequest
     private function notModified(): bool
     {
         $notModified = false;
-        if (URL::get('converted') === 'GET') {
+        if (URL::getMethod('converted') === 'GET') {
             $cacheHeaders = ResponseDepot::getCache();
             $lastModified = $cacheHeaders['Last-Modified'] ?? null;
             $modifiedSince = Headers::responseDependency('if_modified_since');
@@ -297,10 +297,9 @@ class BaseResponse extends BaseRequest
 
     private function contentParser($content)
     {
-        if (ResponseDepot::$contentType == 'json' ||
-            $content instanceof JsonSerializable ||
-            $content instanceof ArrayObject ||
-            is_array($content)) {
+        $shouldBeJSON = ResponseDepot::$contentType == 'json' || $content instanceof JsonSerializable;
+        $isArray = $content instanceof ArrayObject || is_array($content);
+        if ($shouldBeJSON || $isArray) {
             ResponseDepot::setHeader('Content-Type', 'application/json', false);
             return json_encode($content, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
         }

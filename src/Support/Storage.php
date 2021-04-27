@@ -8,13 +8,13 @@ use AbmmHasan\WebFace\Router;
 
 class Storage
 {
-    public static $response_throw = [];
     private static $route_in_operation = '/';
     private static $route_resource;
+    public static $cached_route_resource;
 
     public static function cache()
     {
-        self::loadRoute();
+        self::prepareRoute();
         $content = self::removeClosures(self::$route_resource);
         return file_put_contents(
             projectPath() . Settings::$cache_path,
@@ -25,11 +25,10 @@ class Storage
 
     public static function getRouteResource($key)
     {
-        self::loadRoute();
-        return self::$route_resource[$key] ?? null;
+        return self::$cached_route_resource[$key] ?? null;
     }
 
-    private static function loadRoute()
+    private static function prepareRoute()
     {
         if (!isset(self::$route_resource)) {
             $router = new Router([], false);

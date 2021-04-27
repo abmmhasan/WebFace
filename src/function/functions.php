@@ -50,20 +50,25 @@ if (!function_exists('webface')) {
                 require_once($filename);
             }
         }
+        \AbmmHasan\WebFace\Support\Storage::$cached_route_resource = $router->getRoutes();
         $router->run();
     }
 }
 
 if (!function_exists('route')) {
     /**
-     * Initiate router
+     * Resolve route path from name
      *
-     * @param array $middlewareList
-     * @param bool $loadCache
      */
-    function route($path)
+    function route($name, ...$params)
     {
-
+        $namedRoutes = \AbmmHasan\WebFace\Support\Storage::getRouteResource('named');
+        if (isset($namedRoutes[$name])) {
+            $method = $namedRoutes[$name][0];
+            $url = \AbmmHasan\WebFace\Utility\URL::get('prefix') . ltrim($namedRoutes[$name][1], '/');
+            return [$method, $url];
+        }
+        return null;
     }
 }
 
