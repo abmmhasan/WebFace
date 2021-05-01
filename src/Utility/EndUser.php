@@ -6,9 +6,9 @@ namespace AbmmHasan\WebFace\Utility;
 
 final class EndUser extends Utility
 {
-    private static $checkedIps = [];
-    private static $clientIp;
-    private static $info;
+    private static array $checkedIps = [];
+    private static string $clientIp;
+    private static Arrject $info;
 
 
     public static function info($key = null)
@@ -33,7 +33,7 @@ final class EndUser extends Utility
      *
      * @return string
      */
-    public static function ip()
+    public static function ip(): ?string
     {
         if (isset(self::$clientIp)) {
             return self::$clientIp;
@@ -80,7 +80,7 @@ final class EndUser extends Utility
      *
      * @return bool Whether the ClientIP is valid
      */
-    public static function checkIP($ips, $checkIP = null)
+    public static function checkIP($ips, $checkIP = null): bool
     {
         $ips = is_array($ips) ? $ips : [$ips];
         self::ip();
@@ -140,7 +140,7 @@ final class EndUser extends Utility
      *
      * @return bool Whether the request ClientIP matches the ClientIP, or whether the request ClientIP is within the CIDR subnet
      */
-    private static function checkIp4(string $ip, $check)
+    private static function checkIp4(string $ip, $check): bool
     {
         $cacheKey = $check . '-' . $ip;
         if (isset(self::$checkedIps[$cacheKey])) {
@@ -185,7 +185,7 @@ final class EndUser extends Utility
      * @author David Soria Parra <dsp at php dot net>
      *
      */
-    private static function checkIp6(string $ip, $check)
+    private static function checkIp6(string $ip, $check): bool
     {
         $cacheKey = $check . '-' . $ip;
         if (isset(self::$checkedIps[$cacheKey])) {

@@ -6,6 +6,7 @@ use AbmmHasan\WebFace\Router;
 if (!function_exists('responseFlush')) {
     /**
      * Send response
+     * @throws Exception
      */
     function responseFlush()
     {
@@ -17,7 +18,7 @@ if (!function_exists('projectPath')) {
     /**
      * Get current project path
      */
-    function projectPath()
+    function projectPath(): string
     {
         $resolve = php_sapi_name() === 'cli' ? './' : '..';
         return realpath($resolve) . DIRECTORY_SEPARATOR;
@@ -41,7 +42,7 @@ if (!function_exists('webface')) {
      * @param array $middlewareList
      * @param bool $loadCache
      */
-    function webface($middlewareList = [], $loadCache = true)
+    function webface(array $middlewareList = [], bool $loadCache = true)
     {
         $router = new Router($middlewareList, $loadCache);
         if (!$router->cacheLoaded) {
@@ -60,7 +61,7 @@ if (!function_exists('route')) {
      * Resolve route path from name
      *
      */
-    function route($name, ...$params)
+    function route($name, ...$params): ?array
     {
         $namedRoutes = \AbmmHasan\WebFace\Support\Storage::getRouteResource('named');
         if (isset($namedRoutes[$name])) {
@@ -80,7 +81,7 @@ if (!function_exists('httpDate')) {
      * @return string A formatted date.
      * @throws Exception
      */
-    function httpDate($date = null)
+    function httpDate($date = null): string
     {
         if ($date instanceof \DateTime) {
             $date = \DateTimeImmutable::createFromMutable($date);

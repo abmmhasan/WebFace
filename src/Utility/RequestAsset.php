@@ -6,11 +6,11 @@ namespace AbmmHasan\WebFace\Utility;
 
 final class RequestAsset extends Utility
 {
-    private static $query;
-    private static $post;
-    private static $files;
-    private static $server;
-    private static $cookie;
+    private static Arrject $query;
+    private static Arrject $post;
+    private static Arrject $files;
+    private static Arrject $server;
+    private static Arrject $cookie;
 
     public static function server($key = null)
     {

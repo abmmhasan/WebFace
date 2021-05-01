@@ -4,27 +4,27 @@ namespace AbmmHasan\WebFace\Utility;
 
 final class Headers extends Utility
 {
-    private static $headers;
-    private static $accept;
-    private static $content;
-    private static $dependency;
+    private static Arrject $headers;
+    private static Arrject $accept;
+    private static Arrject $content;
+    private static Arrject $dependency;
 
     /**
      * Get all HTTP headers
      *
-     * @return Arrject
+     * @return mixed|null
      */
     public static function all($key = null)
     {
         if (!isset(self::$headers)) {
             $headerVar = [];
-            foreach ($_SERVER as $key => $value) {
-                if (0 === strpos($key, 'HTTP_')) {
-                    $key = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($key, 5)))));
-                    $headerVar[$key] = $value;
-                } elseif (\in_array($key, ['CONTENT_TYPE', 'CONTENT_LENGTH', 'CONTENT_MD5'], true)) {
-                    $key = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', $key))));
-                    $headerVar[$key] = $value;
+            foreach ($_SERVER as $item => $value) {
+                if (0 === strpos($item, 'HTTP_')) {
+                    $item = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($item, 5)))));
+                    $headerVar[$item] = $value;
+                } elseif (\in_array($item, ['CONTENT_TYPE', 'CONTENT_LENGTH', 'CONTENT_MD5'], true)) {
+                    $item = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', $item))));
+                    $headerVar[$item] = $value;
                 }
             }
 
@@ -73,7 +73,7 @@ final class Headers extends Utility
     /**
      * Get parsed accept headers
      *
-     * @return Arrject
+     * @return mixed|null
      */
     public static function accept($key = null)
     {
@@ -93,7 +93,7 @@ final class Headers extends Utility
     /**
      * Get parsed content headers
      *
-     * @return Arrject
+     * @return mixed|null
      */
     public static function content($key = null)
     {
@@ -160,7 +160,7 @@ final class Headers extends Utility
         return self::getValue(self::$dependency, $key);
     }
 
-    private static function parseAcceptHeader($content)
+    private static function parseAcceptHeader($content): array
     {
         $prepared = [];
         $parts = explode(',', $content);

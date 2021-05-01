@@ -4,16 +4,19 @@
 namespace AbmmHasan\WebFace\Utility;
 
 
+use Exception;
+
 final class URL extends Utility
 {
-    private static $url;
-    private static $method;
-    private static $methods = ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH'];
+    private static Arrject $url;
+    private static Arrject $method;
+    private static array $methods = ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH'];
 
     /**
      * Get current URL (parsed)
      *
-     * @return Arrject
+     * @param null $key
+     * @return mixed|null
      */
     public static function get($key = null)
     {
@@ -42,12 +45,19 @@ final class URL extends Utility
         return self::getValue(self::$url, $key);
     }
 
+    /**
+     * Get request method
+     *
+     * @param null $key
+     * @return mixed|null
+     * @throws Exception
+     */
     public static function getMethod($key = null)
     {
         if (!isset(self::$method)) {
             $originalMethod = $requestMethod = strtoupper(RequestAsset::server('REQUEST_METHOD') ?? 'GET');
             if (!in_array($requestMethod, self::$methods)) {
-                throw new BadMethodCallException("Invalid method override {$requestMethod}.");
+                throw new Exception("Invalid method override {$requestMethod}.");
             }
             if ($requestMethod === 'HEAD') {
                 $requestMethod = 'GET';
@@ -68,7 +78,7 @@ final class URL extends Utility
         return self::getValue(self::$method, $key);
     }
 
-    private static function getScheme()
+    private static function getScheme(): string
     {
         return ((isset($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) == 'on')
             || (isset($_SERVER['REQUEST_SCHEME']) && $_SERVER['REQUEST_SCHEME'] === 'https')
