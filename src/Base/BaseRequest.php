@@ -9,7 +9,6 @@ use AbmmHasan\WebFace\Utility\EndUser;
 use AbmmHasan\WebFace\Utility\Headers;
 use AbmmHasan\WebFace\Utility\RequestAsset;
 use AbmmHasan\WebFace\Utility\URL;
-use BadMethodCallException;
 
 abstract class BaseRequest
 {
@@ -26,7 +25,7 @@ abstract class BaseRequest
     protected $accept;
     protected $dependencyHeader;
     protected $cookie;
-    protected $request;
+    protected Arrject $request;
     protected $files;
 
     public function __construct()

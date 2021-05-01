@@ -20,7 +20,6 @@ abstract class BaseRoute
     protected $middleware = [];
     protected $globalMiddleware = [];
     private $middlewareCall = 'handle';
-    protected $middlewareDI = false;
     protected $validMethods = [
         'GET',
         'POST',

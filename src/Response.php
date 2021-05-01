@@ -62,12 +62,10 @@ final class Response
      * @param $label
      * @param string $value
      * @param bool $append
-     * @return BaseResponse
      */
     private function setHeader($label, $value = '', $append = true)
     {
         ResponseDepot::setHeader($label, $value, $append);
-        return self::$instance;
     }
 
     /**
@@ -88,14 +86,12 @@ final class Response
      * Set multiple headers at a time
      *
      * @param array $headers
-     * @return BaseResponse
      */
     private function setHeaderByGroup(array $headers)
     {
         foreach ($headers as $name => $value) {
             $this->setHeader($name, $value, false);
         }
-        return self::$instance;
     }
 
     /**
@@ -103,13 +99,11 @@ final class Response
      *
      * @param $content
      * @param $type
-     * @return bool
      */
     private function setContent($content, $type)
     {
         ResponseDepot::$contentType = $type;
         ResponseDepot::$content = $content;
-        return self::$instance;
     }
 
     /**
@@ -138,8 +132,6 @@ final class Response
 
         // Modifiers
         self::setModifier($options);
-
-        return self::$instance;
     }
 
     /**
@@ -288,9 +280,8 @@ final class Response
      *
      * @param $name
      * @param $value
-     * @param int $max_age
+     * @param int|null $max_age
      * @param array $same_site
-     * @return BaseResponse
      */
     private function setCookie($name, $value, int $max_age = null, array $same_site = [])
     {
@@ -310,7 +301,6 @@ final class Response
             $cookies['samesite'] = 'Lax';
         }
         ResponseDepot::setCookie($name, $cookies);
-        return self::$instance;
     }
 
     /**
@@ -320,12 +310,10 @@ final class Response
      * Default UTF-8
      *
      * @param string $charset
-     * @return BaseResponse
      */
-    public function setCharset(string $charset)
+    private function setCharset(string $charset)
     {
         ResponseDepot::$charset = $charset;
-        return self::$instance;
     }
 
     /**
