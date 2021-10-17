@@ -287,8 +287,10 @@ class BaseResponse extends BaseRequest
             }
             unset($cacheVariables['special']);
         }
-        foreach ($cacheVariables as $label => $value) {
-            ResponseDepot::setHeader($label, $value);
+        if (!empty($cacheVariables)) {
+            foreach ($cacheVariables as $label => $value) {
+                ResponseDepot::setHeader($label, $value);
+            }
         }
     }
 

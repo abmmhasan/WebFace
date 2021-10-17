@@ -4,6 +4,8 @@
 namespace AbmmHasan\WebFace\Base;
 
 
+use AbmmHasan\OOF\DI\Container;
+use AbmmHasan\WebFace\Request;
 use AbmmHasan\WebFace\Support\ResponseDepot;
 use AbmmHasan\WebFace\Support\Settings;
 use AbmmHasan\WebFace\Support\Storage;
@@ -55,10 +57,9 @@ abstract class BaseRoute
     }
 
     /**
-     * @param $path
      * @return bool
      */
-    protected function loadCache()
+    protected function loadCache(): bool
     {
         $cachePath = projectPath() . Settings::$cache_path;
         if (file_exists($cachePath)) {
@@ -197,18 +198,19 @@ abstract class BaseRoute
         // Loop all routes to match route pattern
         foreach ($routes as $storedPattern => $route) {
             $pattern = preg_replace('/\/{(.*?)}/', '/(.*?)', $storedPattern);
-            if (preg_match_all('#^' . $pattern . '$#', $uri, $matches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER)) {
+            if (preg_match_all('#^' . $pattern . '$#', $uri, $matches, PREG_SET_ORDER)) {
                 Storage::setCurrentRoute($method . ' ' . $storedPattern);
                 if (!$this->routeMiddlewareCheck($route['before'], $this->globalMiddleware['route'])) {
                     return true;
                 }
-                // Rework matches to only contain the matches, not the original string
-                $params = array_column(array_slice($matches[0], 1), 0);
-                // Binding key value
-                if ($view) {
-                    $params = self::mergeKeys($storedPattern, $params);
-                }
-                $this->invoke($route['fn'], $route['namespace'], $params, $view);
+                preg_match_all('#^' . $pattern . '$#', $storedPattern, $patternKeys, PREG_SET_ORDER);
+                unset($patternKeys[0][0], $matches[0][0]);
+                $this->invoke($route['fn'], $route['namespace'], array_combine(
+                    array_map(function ($value) {
+                        return trim($value, "{}");
+                    }, $patternKeys[0]),
+                    $matches[0]
+                ));
                 $this->runMiddleware($route['after'] ?? []);
                 return true;
             }
@@ -262,43 +264,23 @@ abstract class BaseRoute
     }
 
     /**
-     * @param $pattern
-     * @param $values
-     * @return array
-     */
-    private function mergeKeys($pattern, $values)
-    {
-        $pattern = preg_replace('/\{(\w+?)\?\}/', '{$1}', $pattern);
-        preg_match_all('#\{(!)?(\w+)\}#', $pattern, $matches, PREG_OFFSET_CAPTURE);
-        $matches = array_column(array_slice($matches, 2)[0], 0);
-        return array_combine($matches, $values);
-    }
-
-    /**
      * @param $fn
      * @param string $namespace
      * @param array $params
-     * @param bool $view
      */
-    private function invoke($fn, $namespace = '', $params = [], $view = false)
+    private function invoke($fn, $namespace = '', $params = [])
     {
         ob_start();
         if ($fn instanceof \Closure) {
-            if ($view) {
-                initiate($fn, $params)->closure();
-            } else {
-                initiate($fn, ...$params)->closure();
-            }
-        } elseif (strpos($fn, '@') !== false) {
+            Container::registerClosure('1', $fn, $params)
+                ->callClosure('1');
+        } elseif (str_contains($fn, '@')) {
             list($controller, $method) = explode('@', $fn, 2);
             if ($namespace !== '') {
                 $controller = $namespace . '\\' . $controller;
             }
-            if ($view) {
-                initiate($controller)->$method($params);
-            } else {
-                initiate($controller)->$method(...$params);
-            }
+            Container::registerMethod($controller, $method, $params)
+                ->callMethod($controller);
         }
         ob_end_clean();
     }
@@ -310,20 +292,14 @@ abstract class BaseRoute
      */
     private function invokeMiddleware($fn, $params = '')
     {
-        $params = explode(',', $params);
+        $params = array_filter(explode(',', $params));
         if ($fn instanceof \Closure) {
-            $resource = initiate($fn, ...$params);
-            if (!Settings::$middleware_di) {
-                $resource->_noInject();
-            }
-            return $resource->closure();
+            Container::registerClosure('1', $fn, $params)
+                ->callClosure('1');
         } else {
             $method = $this->middlewareCall;
-            $resource = initiate($fn);
-            if (!Settings::$middleware_di) {
-                $resource->_noInject();
-            }
-            return $resource->$method(...$params);
+            return Container::registerMethod($fn, $method, $params)
+                ->callMethod($fn);
         }
     }
 }
