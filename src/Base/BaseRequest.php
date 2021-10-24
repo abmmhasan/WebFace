@@ -50,7 +50,7 @@ abstract class BaseRequest
         $this->files = RequestAsset::files();
         $this->rawBody = RequestAsset::raw();
         $this->parsedBody = RequestAsset::parsedBody();
-        $this->request = new Arrject(self::getRequest());
+        $this->request ??= new Arrject(self::getRequest());
     }
 
     /**

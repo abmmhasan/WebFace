@@ -86,11 +86,11 @@ final class RequestAsset extends Utility
     public static function parsedBody(string $key = null): mixed
     {
         if (!isset(self::$body) && ($rawBody = self::raw())) {
-            self::$body = match (Headers::content('type')) {
+            self::$body = new Arrject(match (Headers::content('type')) {
                 'application/json' => json_decode($rawBody, true),
                 'application/xml' => self::getParsedXML($rawBody),
-                'default' => []
-            };
+                default => []
+            });
         }
         return self::getValue(self::$body, $key);
     }
