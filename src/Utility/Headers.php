@@ -2,6 +2,8 @@
 
 namespace AbmmHasan\WebFace\Utility;
 
+use AbmmHasan\OOF\Remix\Arrject;
+
 final class Headers extends Utility
 {
     private static Arrject $headers;
@@ -12,17 +14,18 @@ final class Headers extends Utility
     /**
      * Get all HTTP headers
      *
-     * @return mixed|null
+     * @param string|null $key
+     * @return mixed
      */
-    public static function all($key = null)
+    public static function all(string $key = null): mixed
     {
         if (!isset(self::$headers)) {
             $headerVar = [];
             foreach ($_SERVER as $item => $value) {
-                if (0 === strpos($item, 'HTTP_')) {
+                if (str_starts_with($item, 'HTTP_')) {
                     $item = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($item, 5)))));
                     $headerVar[$item] = $value;
-                } elseif (\in_array($item, ['CONTENT_TYPE', 'CONTENT_LENGTH', 'CONTENT_MD5'], true)) {
+                } elseif (in_array($item, ['CONTENT_TYPE', 'CONTENT_LENGTH', 'CONTENT_MD5'], true)) {
                     $item = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', $item))));
                     $headerVar[$item] = $value;
                 }
@@ -73,9 +76,10 @@ final class Headers extends Utility
     /**
      * Get parsed accept headers
      *
-     * @return mixed|null
+     * @param string|null $key
+     * @return mixed
      */
-    public static function accept($key = null)
+    public static function accept(string $key = null): mixed
     {
         if (!isset(self::$accept)) {
             self::all();
@@ -93,9 +97,10 @@ final class Headers extends Utility
     /**
      * Get parsed content headers
      *
-     * @return mixed|null
+     * @param string|null $key
+     * @return mixed
      */
-    public static function content($key = null)
+    public static function content(string $key = null): mixed
     {
         if (!isset(self::$content)) {
             self::all();
@@ -105,7 +110,7 @@ final class Headers extends Utility
             if ($parts) {
                 foreach ($parts as $part) {
                     $part = str_replace(' ', '', $part);
-                    if (substr($part, 0, 8) == 'charset=') {
+                    if (str_starts_with($part, 'charset=')) {
                         $charset = substr($part, 8);
                         break;
                     }
@@ -122,7 +127,13 @@ final class Headers extends Utility
         return self::getValue(self::$content, $key);
     }
 
-    public static function responseDependency($key = null)
+    /**
+     * Get response dependency
+     *
+     * @param string|null $key
+     * @return mixed
+     */
+    public static function responseDependency(string $key = null): mixed
     {
         if (!isset(self::$dependency)) {
             self::all();
@@ -160,7 +171,13 @@ final class Headers extends Utility
         return self::getValue(self::$dependency, $key);
     }
 
-    private static function parseAcceptHeader($content): array
+    /**
+     * Accept header parser
+     *
+     * @param string $content
+     * @return array
+     */
+    private static function parseAcceptHeader(string $content): array
     {
         $prepared = [];
         $parts = explode(',', $content);
@@ -191,7 +208,7 @@ final class Headers extends Utility
         return array_column($prepared, 'accept');
     }
 
-    private static function compareWildcard($types)
+    private static function compareWildcard($types): bool|int
     {
         return count($types) === 1 ? 0 : ($types[0] === '*') - ($types[1] === '*');
     }

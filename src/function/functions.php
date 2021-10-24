@@ -28,8 +28,12 @@ if (!function_exists('projectPath')) {
 if (!function_exists('setPreTag')) {
     /**
      * Get current project path
+     * @param $path
+     * @param $tag
+     * @return bool|int
+     * @throws Exception
      */
-    function setPreTag($path, $tag)
+    function setPreTag($path, $tag): bool|int
     {
         return (new \AbmmHasan\WebFace\Middleware\PreTag())->set($path, $tag);
     }
@@ -77,11 +81,11 @@ if (!function_exists('httpDate')) {
     /**
      * Converts any recognizable date format to an HTTP date.
      *
-     * @param mixed $date The incoming date value.
+     * @param mixed|null $date The incoming date value.
      * @return string A formatted date.
      * @throws Exception
      */
-    function httpDate($date = null): string
+    function httpDate(mixed $date = null): string
     {
         if ($date instanceof \DateTime) {
             $date = \DateTimeImmutable::createFromMutable($date);

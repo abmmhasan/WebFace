@@ -4,7 +4,7 @@
 namespace AbmmHasan\WebFace\Base;
 
 
-use AbmmHasan\WebFace\Utility\Arrject;
+use AbmmHasan\OOF\Remix\Arrject;
 use AbmmHasan\WebFace\Utility\EndUser;
 use AbmmHasan\WebFace\Utility\Headers;
 use AbmmHasan\WebFace\Utility\RequestAsset;
@@ -12,21 +12,23 @@ use AbmmHasan\WebFace\Utility\URL;
 
 abstract class BaseRequest
 {
-    protected $post;
-    protected $query;
-    protected $server;
-    protected $client;
-    protected $headers;
-    protected $method;
-    protected $originalMethod;
-    protected $url;
-    protected $xhr;
-    protected $contentHeader;
-    protected $accept;
-    protected $dependencyHeader;
-    protected $cookie;
+    protected Arrject $post;
+    protected Arrject $query;
+    protected Arrject $server;
+    protected Arrject $client;
+    protected Arrject $headers;
+    protected string $method;
+    protected string $originalMethod;
+    protected Arrject $url;
+    protected bool $xhr;
+    protected Arrject $contentHeader;
+    protected Arrject $accept;
+    protected Arrject $dependencyHeader;
+    protected Arrject $cookie;
     protected Arrject $request;
-    protected $files;
+    protected Arrject $files;
+    private string|bool $rawBody;
+    private mixed $parsedBody;
 
     public function __construct()
     {
@@ -39,32 +41,25 @@ abstract class BaseRequest
         $this->accept = Headers::accept();
         $this->url = URL::get();
         $this->dependencyHeader = Headers::responseDependency();
+        $this->client = EndUser::info();
+        $this->xhr = URL::getMethod('isAjax');
+
+        // Request assets
         $this->post = RequestAsset::post();
         $this->query = RequestAsset::query();
         $this->files = RequestAsset::files();
+        $this->rawBody = RequestAsset::raw();
+        $this->parsedBody = RequestAsset::parsedBody();
         $this->request = new Arrject(self::getRequest());
-        $this->client = EndUser::info();
-        $this->xhr = URL::getMethod('isAjax');
     }
 
-    private function getRequest()
+    /**
+     * Get Request in prioritized order
+     *
+     * @return array
+     */
+    private function getRequest(): array
     {
-        $data = $this->post->toArray() + $this->files->toArray() + $this->query->toArray();
-        if ($input = file_get_contents('php://input')) {
-            switch ($this->contentHeader->type) {
-                case 'application/json':
-                    $data += json_decode($input, true);
-                    break;
-                case 'application/xml':
-                    $input = preg_replace("/(<\/?)(\w+):([^>]*>)/", "$1$2$3", $input);
-                    $input = preg_replace('/\s\s+/', " ", $input);
-                    $input = simplexml_load_string($input);
-                    $data += json_decode(json_encode($input), true);
-                    break;
-                default:
-                    break;
-            }
-        }
-        return $data;
+        return $this->parsedBody->toArray() + $this->post->toArray() + $this->files->toArray() + $this->query->toArray();
     }
 }

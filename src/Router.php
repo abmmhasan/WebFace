@@ -15,13 +15,13 @@ final class Router extends BaseRoute
 {
     /**
      * Router constructor.
-     * @param array $settings
+     * @param array $middleware
+     * @param bool $loadCache
      */
     public function __construct(array $middleware = [], bool $loadCache = true)
     {
         parent::__construct();
         $this->serverBasePath = empty(Settings::$base_path) ? URL::get('base') : Settings::$base_path;
-        $this->namespace = Settings::$base_namespace;
         $this->globalMiddleware = $middleware;
         if ($loadCache && Settings::$cache_load && !empty(Settings::$cache_path)) {
             $this->cacheLoaded = $this->loadCache();
@@ -76,7 +76,6 @@ final class Router extends BaseRoute
         }
         // Track current
         $curBaseRoute = $this->baseRoute;
-        $curNameSpace = $this->namespace;
         $curMiddleWare = $this->middleware;
         $curName = $this->name;
         $curPrefix = $this->prefix;
@@ -87,7 +86,6 @@ final class Router extends BaseRoute
 
         // Restore original
         $this->baseRoute = $curBaseRoute;
-        $this->namespace = $curNameSpace;
         $this->middleware = $curMiddleWare;
         $this->name = $curName;
         $this->prefix = $curPrefix;

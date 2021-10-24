@@ -4,14 +4,22 @@
 namespace AbmmHasan\WebFace\Utility;
 
 
+use AbmmHasan\OOF\Remix\Arrject;
+use RuntimeException;
+
 final class EndUser extends Utility
 {
     private static array $checkedIps = [];
     private static string $clientIp;
     private static Arrject $info;
 
-
-    public static function info($key = null)
+    /**
+     * Get user info
+     *
+     * @param string|null $key
+     * @return mixed
+     */
+    public static function info(string $key = null): mixed
     {
         if (!isset(self::$info)) {
             self::$info = new Arrject([
@@ -31,7 +39,7 @@ final class EndUser extends Utility
     /**
      * Get Client IP
      *
-     * @return string
+     * @return string|null
      */
     public static function ip(): ?string
     {
@@ -76,11 +84,10 @@ final class EndUser extends Utility
     /**
      * Checks if Client IP is contained in the list of given IPs or subnets.
      *
-     * @param string|array $ips List of IPs or subnets (can be a string if only a single one)
-     *
+     * @param array|string $ips List of IPs or subnets (can be a string if only a single one)
      * @return bool Whether the ClientIP is valid
      */
-    public static function checkIP($ips, $checkIP = null): bool
+    public static function checkIP(array|string $ips, $checkIP = null): bool
     {
         $ips = is_array($ips) ? $ips : [$ips];
         self::ip();
@@ -108,7 +115,7 @@ final class EndUser extends Utility
     public static function anonymize(string $ip): string
     {
         $wrappedIPv6 = false;
-        if ('[' === substr($ip, 0, 1) && ']' === substr($ip, -1, 1)) {
+        if (str_starts_with($ip, '[') && str_ends_with($ip, ']')) {
             $wrappedIPv6 = true;
             $ip = substr($ip, 1, -1);
         }
@@ -137,7 +144,6 @@ final class EndUser extends Utility
      * In case a subnet is given, it checks if it contains the request ClientIP.
      *
      * @param string $ip IPv4 address or subnet in CIDR notation
-     *
      * @return bool Whether the request ClientIP matches the ClientIP, or whether the request ClientIP is within the CIDR subnet
      */
     private static function checkIp4(string $ip, $check): bool
@@ -149,7 +155,7 @@ final class EndUser extends Utility
         if (!filter_var($check, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
             return self::$checkedIps[$cacheKey] = false;
         }
-        if (false !== strpos($ip, '/')) {
+        if (str_contains($ip, '/')) {
             list($address, $netmask) = explode('/', $ip, 2);
 
             if ('0' === $netmask) {
@@ -168,7 +174,11 @@ final class EndUser extends Utility
             return self::$checkedIps[$cacheKey] = false;
         }
 
-        return self::$checkedIps[$cacheKey] = 0 === substr_compare(sprintf('%032b', ip2long($check)), sprintf('%032b', ip2long($address)), 0, $netmask);
+        return self::$checkedIps[$cacheKey] = 0 === substr_compare(
+                sprintf('%032b', ip2long($check)),
+                sprintf('%032b', ip2long($address)),
+                0, $netmask
+            );
     }
 
     /**
@@ -179,7 +189,7 @@ final class EndUser extends Utility
      *
      * @return bool Whether the ClientIP is valid
      *
-     * @throws \RuntimeException When IPV6 support is not enabled
+     * @throws RuntimeException When IPV6 support is not enabled
      * @see https://github.com/dsp/v6tools
      *
      * @author David Soria Parra <dsp at php dot net>
@@ -193,10 +203,10 @@ final class EndUser extends Utility
         }
 
         if (!((\extension_loaded('sockets') && \defined('AF_INET6')) || @inet_pton('::1'))) {
-            throw new \RuntimeException('Unable to check Ipv6. Check that PHP was not compiled with option "disable-ipv6".');
+            throw new RuntimeException('Unable to check Ipv6. Check that PHP was not compiled with option "disable-ipv6".');
         }
 
-        if (false !== strpos($ip, '/')) {
+        if (str_contains($ip, '/')) {
             list($address, $netmask) = explode('/', $ip, 2);
 
             if ('0' === $netmask) {
@@ -230,7 +240,7 @@ final class EndUser extends Utility
         return self::$checkedIps[$cacheKey] = true;
     }
 
-    private static function userAgentInfo()
+    private static function userAgentInfo(): object|bool|array
     {
         if (ini_get('browscap')) {
             return @get_browser(null, true) ?? [];

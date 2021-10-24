@@ -2,12 +2,13 @@
 
 namespace AbmmHasan\WebFace;
 
+use AbmmHasan\OOF\Remix\Arrject;
 use AbmmHasan\WebFace\Base\BaseRequest;
 use BadMethodCallException;
 
 final class Request extends BaseRequest
 {
-    private $allowed = [
+    private array $allowed = [
         'base',
         'server',
         'client',
@@ -27,7 +28,6 @@ final class Request extends BaseRequest
      * Read-only access to property objects.
      *
      * @param string $key The name of the property object to read.
-     *
      * @return mixed The property object.
      */
     public function __get(string $key)
@@ -35,7 +35,12 @@ final class Request extends BaseRequest
         return $this->request->$key;
     }
 
-    public function all()
+    /**
+     * Get all the request element
+     *
+     * @return Arrject all the request element
+     */
+    public function all(): Arrject
     {
         return $this->request;
     }

@@ -7,14 +7,7 @@ namespace AbmmHasan\WebFace\Support;
 class Settings
 {
     /**
-     * Set Controller Namespace
-     *
-     * @var string
-     */
-    public static string $base_namespace = 'App\HTTP\Controller';
-
-    /**
-     * If the route is running from Subfolder
+     * If the route is running from Sub-folder
      *
      * @var string
      */

@@ -9,9 +9,9 @@ abstract class Utility
     /**
      * @param $asset
      * @param $key
-     * @return mixed|null
+     * @return mixed
      */
-    protected static function getValue($asset, $key)
+    protected static function getValue($asset, $key): mixed
     {
         if (empty($key)) {
             return $asset;

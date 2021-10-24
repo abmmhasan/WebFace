@@ -6,15 +6,18 @@ namespace AbmmHasan\WebFace\Support;
 
 class HTTPResource
 {
-    public static $responseVersion = '1.1';
+    public static string $responseVersion = '1.1';
 
-    public static $statusList = [
+    public static array $statusList = [
+
         // Official Response Series (defined by IANA)
+
         // 100 Series: Informational
         100 => 'Continue',
         101 => 'Switching Protocols',
         102 => 'Processing',
         103 => 'Early Hints',
+
         // 200 Series: Successful
         200 => 'OK',
         201 => 'Created',
@@ -26,6 +29,7 @@ class HTTPResource
         207 => 'Multi-Status',
         208 => 'Already Reported',
         226 => 'IM Used',
+
         // 300 Series: Redirection
         300 => 'Multiple Choices',
         301 => 'Moved Permanently',
@@ -36,6 +40,7 @@ class HTTPResource
         306 => 'Reserved(Unused)',
         307 => 'Temporary Redirect',
         308 => 'Permanent Redirect',
+
         // 400 Series: Client Error
         400 => 'Bad Request',
         401 => 'Unauthorized',
@@ -64,6 +69,7 @@ class HTTPResource
         428 => 'Precondition Required',
         429 => 'Too Many Requests',
         431 => 'Request Header Fields Too Large',
+
         // 500 Series: Server Error
         500 => 'Internal Server Error',
         501 => 'Not Implemented',
@@ -79,7 +85,8 @@ class HTTPResource
         // Custom Response Series (unofficial & project specific)
     ];
 
-    public static $cache = [
+    public static array $cache = [
+
         // Standard Control
         'must_revalidate' => true,
         'no_cache' => true,
@@ -90,10 +97,12 @@ class HTTPResource
         'proxy_revalidate' => true,
         'max_age' => false,
         's_maxage' => false,
+
         // Control with Compatibility Issue (check mdn for details)
         'immutable' => true,
         'stale_while_revalidate' => false,
         'stale_if_error' => false,
+
         // Other Separate Directives
         'last_modified' => false,
         'vary' => false,

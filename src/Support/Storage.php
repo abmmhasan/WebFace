@@ -8,11 +8,16 @@ use AbmmHasan\WebFace\Router;
 
 class Storage
 {
-    private static $route_in_operation = '/';
-    private static $route_resource;
-    public static $cached_route_resource;
+    private static string $route_in_operation = '/';
+    private static mixed $route_resource;
+    public static array $cached_route_resource;
 
-    public static function cache()
+    /**
+     * Prepare and cache route
+     *
+     * @return bool|int
+     */
+    public static function cache(): bool|int
     {
         self::prepareRoute();
         $content = self::removeClosures(self::$route_resource);
@@ -23,11 +28,20 @@ class Storage
         );
     }
 
-    public static function getRouteResource($key)
+    /**
+     * Get route resource
+     *
+     * @param $key
+     * @return mixed
+     */
+    public static function getRouteResource($key): mixed
     {
         return self::$cached_route_resource[$key] ?? null;
     }
 
+    /**
+     * Prepare route resources
+     */
     private static function prepareRoute()
     {
         if (!isset(self::$route_resource)) {
@@ -39,17 +53,33 @@ class Storage
         }
     }
 
-    public static function setCurrentRoute($route = null)
+    /**
+     * Set active route
+     *
+     * @param string|null $route
+     */
+    public static function setCurrentRoute(string $route = null)
     {
         self::$route_in_operation = $route;
     }
 
-    public static function getCurrentRoute()
+    /**
+     * Get active route
+     *
+     * @return string
+     */
+    public static function getCurrentRoute(): string
     {
         return self::$route_in_operation;
     }
 
-    private static function removeClosures($content)
+    /**
+     * Removing closure as it is not supported in export
+     *
+     * @param $content
+     * @return array
+     */
+    private static function removeClosures($content): array
     {
         $filtered = [];
         foreach ($content as $method => $routeList) {

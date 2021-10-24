@@ -5,7 +5,6 @@ namespace AbmmHasan\WebFace\Base;
 
 
 use AbmmHasan\OOF\DI\Container;
-use AbmmHasan\WebFace\Request;
 use AbmmHasan\WebFace\Support\ResponseDepot;
 use AbmmHasan\WebFace\Support\Settings;
 use AbmmHasan\WebFace\Support\Storage;
@@ -13,16 +12,15 @@ use AbmmHasan\WebFace\Utility\URL;
 
 abstract class BaseRoute
 {
-    protected $routes = [];
-    protected $baseRoute = [];
-    protected $serverBasePath;
-    protected $namespace;
+    protected array $routes = [];
+    protected array $baseRoute = [];
+    protected string $serverBasePath;
     protected $name;
     protected $prefix;
-    protected $middleware = [];
-    protected $globalMiddleware = [];
-    private $middlewareCall = 'handle';
-    protected $validMethods = [
+    protected array $middleware = [];
+    protected array $globalMiddleware = [];
+    private string $middlewareCall = 'handle';
+    protected array $validMethods = [
         'GET',
         'POST',
         'PUT',
@@ -37,7 +35,7 @@ abstract class BaseRoute
         'XPATCH',
         'VIEW'
     ];
-    public $cacheLoaded = false;
+    public bool $cacheLoaded = false;
 
     public function __construct()
     {
@@ -89,17 +87,11 @@ abstract class BaseRoute
     protected function buildRoute(array $methods, $pattern, $callback, &$routeResource)
     {
         $routeInfo = [
-            'namespace' => $this->namespace,
             'before' => $this->middleware['before'] ?? [],
             'after' => $this->middleware['after'] ?? [],
             'fn' => $callback
         ];
         if (is_array($callback)) {
-            if (!empty($callback['namespace'])) {
-                $routeInfo['namespace'] = $this->namespace . '\\' . ucwords(
-                        $callback['namespace']
-                    );
-            }
             if (!empty($callback['middleware']) || !empty($callback['before'])) {
                 $before = array_merge(
                     $routeInfo['before'],
@@ -142,9 +134,6 @@ abstract class BaseRoute
         if (!empty($settings['prefix'])) {
             $this->prefix = explode('/', trim($settings['prefix']));
             $this->baseRoute = array_filter(array_merge($this->baseRoute, $this->prefix));
-        }
-        if (!empty($settings['namespace'])) {
-            $this->namespace .= '\\' . ucwords($settings['namespace'], '\\');
         }
         if (!empty($settings['middleware']) || !empty($settings['before'])) {
             $this->middleware['before'] = array_merge(
@@ -191,7 +180,7 @@ abstract class BaseRoute
             if (!$this->routeMiddlewareCheck($routes[$uri]['before'], $this->globalMiddleware['route'])) {
                 return true;
             }
-            $this->invoke($routes[$uri]['fn'], $routes[$uri]['namespace']);
+            $this->invoke($routes[$uri]['fn']);
             $this->runMiddleware($route['after'] ?? []);
             return true;
         }
@@ -205,7 +194,7 @@ abstract class BaseRoute
                 }
                 preg_match_all('#^' . $pattern . '$#', $storedPattern, $patternKeys, PREG_SET_ORDER);
                 unset($patternKeys[0][0], $matches[0][0]);
-                $this->invoke($route['fn'], $route['namespace'], array_combine(
+                $this->invoke($route['fn'], array_combine(
                     array_map(function ($value) {
                         return trim($value, "{}");
                     }, $patternKeys[0]),
@@ -230,7 +219,7 @@ abstract class BaseRoute
                 if (!empty($item) &&
                     !in_array($item, $result) &&
                     !in_array("!{$item}", $array) &&
-                    strpos($item, '!') === false) {
+                    !str_starts_with($item, '!')) {
                     $result[] = $item;
                 }
             }
@@ -265,20 +254,16 @@ abstract class BaseRoute
 
     /**
      * @param $fn
-     * @param string $namespace
      * @param array $params
      */
-    private function invoke($fn, $namespace = '', $params = [])
+    private function invoke($fn, $params = [])
     {
         ob_start();
         if ($fn instanceof \Closure) {
             Container::registerClosure('1', $fn, $params)
                 ->callClosure('1');
-        } elseif (str_contains($fn, '@')) {
-            list($controller, $method) = explode('@', $fn, 2);
-            if ($namespace !== '') {
-                $controller = $namespace . '\\' . $controller;
-            }
+        } elseif (is_array($fn)) {
+            [$controller, $method] = $fn;
             Container::registerMethod($controller, $method, $params)
                 ->callMethod($controller);
         }

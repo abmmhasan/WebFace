@@ -4,6 +4,7 @@
 namespace AbmmHasan\WebFace\Utility;
 
 
+use AbmmHasan\OOF\Remix\Arrject;
 use Exception;
 
 final class URL extends Utility
@@ -15,10 +16,10 @@ final class URL extends Utility
     /**
      * Get current URL (parsed)
      *
-     * @param null $key
-     * @return mixed|null
+     * @param string|null $key
+     * @return mixed
      */
-    public static function get($key = null)
+    public static function get(string $key = null): mixed
     {
         if (!isset(self::$url)) {
             $host = RequestAsset::server('HTTP_HOST') ?? 'localhost';
@@ -48,11 +49,11 @@ final class URL extends Utility
     /**
      * Get request method
      *
-     * @param null $key
-     * @return mixed|null
+     * @param string|null $key
+     * @return mixed
      * @throws Exception
      */
-    public static function getMethod($key = null)
+    public static function getMethod(string $key = null): mixed
     {
         if (!isset(self::$method)) {
             $originalMethod = $requestMethod = strtoupper(RequestAsset::server('REQUEST_METHOD') ?? 'GET');
@@ -84,9 +85,7 @@ final class URL extends Utility
             || (isset($_SERVER['REQUEST_SCHEME']) && $_SERVER['REQUEST_SCHEME'] === 'https')
             || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
             || (isset($_SERVER['HTTP_FRONT_END_HTTPS']) && $_SERVER['HTTP_FRONT_END_HTTPS'] === 'on')
-            || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower(
-                    $_SERVER['HTTP_X_FORWARDED_PROTO']
-                ) == 'https')
+            || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) == 'https')
             || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443))
             ? 'https://' : 'http://';
     }
