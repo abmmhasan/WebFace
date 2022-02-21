@@ -5,7 +5,7 @@ namespace AbmmHasan\WebFace\Middleware;
 
 
 use AbmmHasan\WebFace\Support\Settings;
-use AbmmHasan\WebFace\Support\Storage;
+use AbmmHasan\WebFace\Support\RouteDepot;
 use AbmmHasan\WebFace\Utility\Headers;
 use AbmmHasan\WebFace\Utility\URL;
 use Exception;
@@ -67,7 +67,7 @@ class PreTag
      */
     private function setByPath($path, $tag)
     {
-        $list = Storage::getRouteResource('list');
+        $list = RouteDepot::getResource('list');
         if (empty($list) || !in_array($path, $list)) {
             throw new Exception("Route path '{$path}' invalid!");
         }
@@ -83,7 +83,7 @@ class PreTag
      */
     private function compareDependency(): array|bool
     {
-        $route = explode(" ", Storage::getCurrentRoute(), 2);
+        $route = explode(" ", RouteDepot::getCurrentRoute(), 2);
         if (is_null($this->asset) || !isset($this->asset[$route[1]])) {
             return true;
         }

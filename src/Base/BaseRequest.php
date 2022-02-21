@@ -27,8 +27,8 @@ abstract class BaseRequest
     protected Arrject $cookie;
     protected Arrject $request;
     protected Arrject $files;
-    private string|bool $rawBody;
-    private mixed $parsedBody;
+    protected string|bool $rawBody;
+    protected mixed $parsedBody;
 
     public function __construct()
     {
@@ -60,6 +60,7 @@ abstract class BaseRequest
      */
     private function getRequest(): array
     {
-        return $this->parsedBody->toArray() + $this->post->toArray() + $this->files->toArray() + $this->query->toArray();
+        return (is_null($this->parsedBody) ? [] : $this->parsedBody->toArray()) +
+            $this->post->toArray() + $this->files->toArray() + $this->query->toArray();
     }
 }

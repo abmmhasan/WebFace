@@ -4,16 +4,16 @@
 namespace AbmmHasan\WebFace\Support;
 
 
-class ResponseDepot
+final class ResponseDepot
 {
     public static int $code = 200;
     public static string $contentType = 'json';
     public static string|array $content = '';
     public static string $charset = 'UTF-8';
 
-    private static array $header;
-    private static array $cacheHeader;
-    private static array $cookieHeader;
+    private static array $header = [];
+    private static array $cacheHeader = [];
+    private static array $cookieHeader = [];
 
     public static function setHeader($label, $value = '', $append = true)
     {

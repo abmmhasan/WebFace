@@ -4,7 +4,7 @@
 namespace AbmmHasan\WebFace\Support;
 
 
-class HTTPResource
+final class HTTPResource
 {
     public static string $responseVersion = '1.1';
 

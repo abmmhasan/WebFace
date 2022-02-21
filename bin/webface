@@ -1,13 +1,13 @@
 #!/usr/bin/env php
 <?php
 
-use AbmmHasan\WebFace\Support\Storage;
+use AbmmHasan\WebFace\Support\RouteDepot;
 
 if (php_sapi_name() !== 'cli') {
     exit;
 }
 require_once(realpath('./vendor/autoload.php'));
-$written = Storage::cache();
+$written = RouteDepot::cache();
 if ($written) {
     echo "Route cached successfully ({$written} Bytes written)!";
 } else {

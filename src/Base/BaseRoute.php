@@ -7,7 +7,7 @@ namespace AbmmHasan\WebFace\Base;
 use AbmmHasan\OOF\DI\Container;
 use AbmmHasan\WebFace\Support\ResponseDepot;
 use AbmmHasan\WebFace\Support\Settings;
-use AbmmHasan\WebFace\Support\Storage;
+use AbmmHasan\WebFace\Support\RouteDepot;
 use AbmmHasan\WebFace\Utility\URL;
 
 abstract class BaseRoute
@@ -19,7 +19,6 @@ abstract class BaseRoute
     protected $prefix;
     protected array $middleware = [];
     protected array $globalMiddleware = [];
-    private string $middlewareCall = 'handle';
     protected array $validMethods = [
         'GET',
         'POST',
@@ -37,11 +36,19 @@ abstract class BaseRoute
     ];
     public bool $cacheLoaded = false;
 
+    /**
+     * Base Route Constructor
+     */
     public function __construct()
     {
         $this->loadJsonSettings();
     }
 
+    /**
+     * Load Settings from json file
+     *
+     * @return void
+     */
     private function loadJsonSettings()
     {
         if (file_exists($file = projectPath() . 'webface.json')) {
@@ -55,6 +62,8 @@ abstract class BaseRoute
     }
 
     /**
+     * Load route cache
+     *
      * @return bool
      */
     protected function loadCache(): bool
@@ -68,10 +77,12 @@ abstract class BaseRoute
     }
 
     /**
+     * Prepare route pattern (for further process)
+     *
      * @param $route
      * @return string
      */
-    protected function preparePattern($route)
+    protected function preparePattern($route): string
     {
         $route = array_filter(explode('/', trim($route)));
         $route = array_merge($this->baseRoute, $route);
@@ -79,6 +90,8 @@ abstract class BaseRoute
     }
 
     /**
+     * Prepare route asset (for further process)
+     *
      * @param array $methods
      * @param $pattern
      * @param $callback
@@ -127,6 +140,8 @@ abstract class BaseRoute
     }
 
     /**
+     * Prepare grouped routes
+     *
      * @param $settings
      */
     protected function prepareGroupContent($settings)
@@ -156,6 +171,12 @@ abstract class BaseRoute
         }
     }
 
+    /**
+     * Execute middlewares
+     *
+     * @param $resource
+     * @return void
+     */
     protected function runMiddleware($resource)
     {
         if (!empty($resource)) {
@@ -166,52 +187,58 @@ abstract class BaseRoute
     }
 
     /**
+     * Find and execute exact route
+     *
      * @param $routes
-     * @param false $view
+     * @param $method
      * @return bool
      */
-    protected function handle($routes, $method, $view = false)
+    protected function handle($routes, $method): bool
     {
-        // Current Relative URL : remove rewrite base path from it (allows running the router in a sub directory)
+        // Current Relative URL: remove rewrite base path from it (allows running the router in a subdirectory)
         $uri = '/' . trim(substr(URL::get('path'), strlen($this->serverBasePath)), '/');
-        // Check if any exact route exist
+        // absolute match
         if (isset($routes[$uri])) {
-            Storage::setCurrentRoute($method . ' ' . $uri);
-            if (!$this->routeMiddlewareCheck($routes[$uri]['before'], $this->globalMiddleware['route'])) {
+            RouteDepot::setCurrentRoute($method . ' ' . $uri);
+            if (!$this->routeMiddlewareCheck($routes[$uri]['before'] ?? [], $this->globalMiddleware['route'])) {
                 return true;
             }
             $this->invoke($routes[$uri]['fn']);
-            $this->runMiddleware($route['after'] ?? []);
+            $this->runMiddleware($routes[$uri]['after'] ?? []);
             return true;
         }
-        // Loop all routes to match route pattern
+        // pattern match
         foreach ($routes as $storedPattern => $route) {
-            $pattern = preg_replace('/\/{(.*?)}/', '/(.*?)', $storedPattern);
-            if (preg_match_all('#^' . $pattern . '$#', $uri, $matches, PREG_SET_ORDER)) {
-                Storage::setCurrentRoute($method . ' ' . $storedPattern);
-                if (!$this->routeMiddlewareCheck($route['before'], $this->globalMiddleware['route'])) {
+            if (str_contains($storedPattern, '{')) {
+                $pattern = preg_replace('/\/{(.*?)}/', '/(.*?)', $storedPattern);
+                if (preg_match_all('#^' . $pattern . '$#', $uri, $matches, PREG_SET_ORDER)) {
+                    RouteDepot::setCurrentRoute($method . ' ' . $storedPattern);
+                    if (!$this->routeMiddlewareCheck($route['before'] ?? [], $this->globalMiddleware['route'])) {
+                        return true;
+                    }
+                    preg_match_all('#^' . $pattern . '$#', $storedPattern, $patternKeys, PREG_SET_ORDER);
+                    unset($patternKeys[0][0], $matches[0][0]);
+                    $this->invoke($route['fn'], array_combine(
+                        array_map(function ($value) {
+                            return trim($value, "{}");
+                        }, $patternKeys[0]),
+                        $matches[0]
+                    ));
+                    $this->runMiddleware($route['after'] ?? []);
                     return true;
                 }
-                preg_match_all('#^' . $pattern . '$#', $storedPattern, $patternKeys, PREG_SET_ORDER);
-                unset($patternKeys[0][0], $matches[0][0]);
-                $this->invoke($route['fn'], array_combine(
-                    array_map(function ($value) {
-                        return trim($value, "{}");
-                    }, $patternKeys[0]),
-                    $matches[0]
-                ));
-                $this->runMiddleware($route['after'] ?? []);
-                return true;
             }
         }
         return false;
     }
 
     /**
+     * Middleware tag filter (add/remove middleware based on given condition)
+     *
      * @param $array
      * @return array
      */
-    private function filterMiddlewareTag($array)
+    private function filterMiddlewareTag($array): array
     {
         $result = [];
         if (!empty($array)) {
@@ -227,18 +254,24 @@ abstract class BaseRoute
         return $result;
     }
 
-    private function routeMiddlewareCheck($check, $collection)
+    /**
+     * Checks route middleware for generating permission
+     *
+     * @param $check
+     * @param $collection
+     * @return bool
+     */
+    private function routeMiddlewareCheck($check, $collection): bool
     {
-        $eligible = true;
         if (empty($check) || empty($collection)) {
-            return $eligible;
+            return true;
         }
         if (is_array($collection) && count($collection)) {
             foreach ($check as $middleware) {
                 $parameterSeparation = explode(':', $middleware, 2);
                 if (isset($collection[$parameterSeparation[0]])) {
                     $eligible = $this->invokeMiddleware($collection[$parameterSeparation[0]], $parameterSeparation[1] ?? '');
-                    if (!is_bool($eligible) || $eligible !== true) {
+                    if ($eligible !== true) {
                         ResponseDepot::$code = $eligible['status'] ?? 403;
                         ResponseDepot::$content = [
                             'status' => 'failed',
@@ -249,14 +282,16 @@ abstract class BaseRoute
                 }
             }
         }
-        return $eligible;
+        return true;
     }
 
     /**
+     * Invoke method
+     *
      * @param $fn
      * @param array $params
      */
-    private function invoke($fn, $params = [])
+    private function invoke($fn, array $params = [])
     {
         ob_start();
         if ($fn instanceof \Closure) {
@@ -271,19 +306,20 @@ abstract class BaseRoute
     }
 
     /**
+     * Invoke middleware
+     *
      * @param $fn
      * @param string $params
-     * @return
+     * @return mixed|void
      */
-    private function invokeMiddleware($fn, $params = '')
+    private function invokeMiddleware($fn, string $params = '')
     {
         $params = array_filter(explode(',', $params));
         if ($fn instanceof \Closure) {
             Container::registerClosure('1', $fn, $params)
                 ->callClosure('1');
         } else {
-            $method = $this->middlewareCall;
-            return Container::registerMethod($fn, $method, $params)
+            return Container::registerMethod($fn, Settings::$middleware_call_on_method, $params)
                 ->callMethod($fn);
         }
     }

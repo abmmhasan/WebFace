@@ -6,7 +6,7 @@ namespace AbmmHasan\WebFace\Support;
 
 use AbmmHasan\WebFace\Router;
 
-class Storage
+final class RouteDepot
 {
     private static string $route_in_operation = '/';
     private static mixed $route_resource;
@@ -34,7 +34,7 @@ class Storage
      * @param $key
      * @return mixed
      */
-    public static function getRouteResource($key): mixed
+    public static function getResource($key): mixed
     {
         return self::$cached_route_resource[$key] ?? null;
     }

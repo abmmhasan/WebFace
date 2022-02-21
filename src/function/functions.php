@@ -55,7 +55,7 @@ if (!function_exists('webface')) {
                 require_once($filename);
             }
         }
-        \AbmmHasan\WebFace\Support\Storage::$cached_route_resource = $router->getRoutes();
+        \AbmmHasan\WebFace\Support\RouteDepot::$cached_route_resource = $router->getRoutes();
         $router->run();
     }
 }
@@ -67,7 +67,7 @@ if (!function_exists('route')) {
      */
     function route($name, ...$params): ?array
     {
-        $namedRoutes = \AbmmHasan\WebFace\Support\Storage::getRouteResource('named');
+        $namedRoutes = \AbmmHasan\WebFace\Support\RouteDepot::getResource('named');
         if (isset($namedRoutes[$name])) {
             $method = $namedRoutes[$name][0];
             $url = \AbmmHasan\WebFace\Utility\URL::get('prefix') . ltrim($namedRoutes[$name][1], '/');

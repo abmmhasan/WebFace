@@ -15,6 +15,7 @@ final class Router extends BaseRoute
 {
     /**
      * Router constructor.
+     *
      * @param array $middleware
      * @param bool $loadCache
      */
@@ -29,6 +30,8 @@ final class Router extends BaseRoute
     }
 
     /**
+     * Add route method by match
+     *
      * @param $method
      * @param $params
      * @return bool
@@ -45,10 +48,12 @@ final class Router extends BaseRoute
     }
 
     /**
+     * Add route
+     *
      * @param array $methods
      * @param $route
      * @param $callback
-     * @return bool
+     * @return bool|void
      */
     public function match(array $methods, $route, $callback)
     {
@@ -60,14 +65,16 @@ final class Router extends BaseRoute
                 throw new BadMethodCallException("Invalid method {$method}.");
             }
         }
-        $pattern = self::preparePattern($route);
+        $pattern = $this->preparePattern($route);
         $this->buildRoute($methods, $pattern, $callback, $this->routes);
     }
 
     /**
+     * Add route group
+     *
      * @param array $settings
      * @param $fn
-     * @return bool
+     * @return bool|void
      */
     public function group(array $settings, $fn)
     {
@@ -79,7 +86,7 @@ final class Router extends BaseRoute
         $curMiddleWare = $this->middleware;
         $curName = $this->name;
         $curPrefix = $this->prefix;
-        self::prepareGroupContent($settings);
+        $this->prepareGroupContent($settings);
 
         // Call the callable
         $fn($this);
@@ -94,6 +101,7 @@ final class Router extends BaseRoute
     /**
      * @param bool $flash
      * @return bool
+     * @throws \Exception
      */
     public function run($flash = true)
     {
@@ -131,9 +139,11 @@ final class Router extends BaseRoute
     }
 
     /**
+     * Get all the available routes
+     *
      * @return array
      */
-    public function getRoutes()
+    public function getRoutes(): array
     {
         return $this->routes;
     }

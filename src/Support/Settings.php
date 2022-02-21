@@ -4,35 +4,35 @@
 namespace AbmmHasan\WebFace\Support;
 
 
-class Settings
+final class Settings
 {
     /**
      * If the route is running from Sub-folder
      *
-     * @var string
+     * @var string|null
      */
-    public static string $base_path = '';
+    public static ?string $base_path = null;
 
     /**
      * PreTag resource file location
      *
-     * @var bool
+     * @var string|null
      */
-    public static string $pre_tag_file_location = '';
+    public static ?string $pre_tag_file_location = null;
 
     /**
      * Path to route resources
      *
-     * @var string
+     * @var string|null
      */
-    public static string $resource_path = '';
+    public static ?string $resource_path = null;
 
     /**
      * Path to route cache file
      *
-     * @var string
+     * @var string|null
      */
-    public static string $cache_path = '\temp\routes.php';
+    public static ?string $cache_path = null;
 
     /**
      * Should the route loaded from cache
@@ -42,11 +42,11 @@ class Settings
     public static bool $cache_load = false;
 
     /**
-     * While calling middleware should it inject dependency
+     * The method to call when execute a class as middleware
      *
-     * @var bool
+     * @var string
      */
-    public static bool $middleware_di = true;
+    public static string $middleware_call_on_method = 'handle';
 
     /**
      * Default Cookie Lifetime
@@ -63,7 +63,7 @@ class Settings
     public static string $cookie_path = '/';
 
     /**
-     * The web domain cookie is elegible for
+     * The web domain cookie is eligible for
      *
      * @var string
      */
