@@ -31,7 +31,7 @@ final class Redirect extends BaseResponse
         ];
 
         if (!(in_array($response_type, array_keys($available)) || in_array($response_type, $available))) {
-            throw new \InvalidArgumentException("The HTTP status code is not a redirect ('{$response_type}' given).");
+            throw new \InvalidArgumentException("The HTTP status code is not a redirect (found '{$response_type}').");
         }
         if (empty($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
             throw new \InvalidArgumentException('Invalid URL');

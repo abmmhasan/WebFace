@@ -1,7 +1,11 @@
 <?php
 
+use AbmmHasan\WebFace\Base\BaseResponse;
+use AbmmHasan\WebFace\Middleware\PreTag;
+use AbmmHasan\WebFace\Support\RouteDepot;
 use AbmmHasan\WebFace\Support\Settings;
 use AbmmHasan\WebFace\Router;
+use AbmmHasan\WebFace\Utility\URL;
 
 if (!function_exists('responseFlush')) {
     /**
@@ -10,7 +14,7 @@ if (!function_exists('responseFlush')) {
      */
     function responseFlush()
     {
-        (new \AbmmHasan\WebFace\Base\BaseResponse)->helloWorld();
+        (new BaseResponse)->helloWorld();
     }
 }
 
@@ -35,18 +39,19 @@ if (!function_exists('setPreTag')) {
      */
     function setPreTag($path, $tag): bool|int
     {
-        return (new \AbmmHasan\WebFace\Middleware\PreTag())->set($path, $tag);
+        return (new PreTag())->set($path, $tag);
     }
 }
 
-if (!function_exists('webface')) {
+if (!function_exists('webFace')) {
     /**
      * Initiate router
      *
      * @param array $middlewareList
      * @param bool $loadCache
+     * @throws Exception
      */
-    function webface(array $middlewareList = [], bool $loadCache = true)
+    function webFace(array $middlewareList = [], bool $loadCache = true)
     {
         $router = new Router($middlewareList, $loadCache);
         if (!$router->cacheLoaded) {
@@ -55,7 +60,7 @@ if (!function_exists('webface')) {
                 require_once($filename);
             }
         }
-        \AbmmHasan\WebFace\Support\RouteDepot::$cached_route_resource = $router->getRoutes();
+        RouteDepot::$cached_route_resource = $router->getRoutes();
         $router->run();
     }
 }
@@ -64,14 +69,23 @@ if (!function_exists('route')) {
     /**
      * Resolve route path from name
      *
+     * @param string $name
+     * @param array|object|null $params
+     * @param int $encoding
+     * @return array|null
      */
-    function route($name, ...$params): ?array
+    function route(string $name, array|object $params = null, int $encoding = PHP_QUERY_RFC3986): ?array
     {
-        $namedRoutes = \AbmmHasan\WebFace\Support\RouteDepot::getResource('named');
+        $namedRoutes = RouteDepot::getResource('named');
         if (isset($namedRoutes[$name])) {
-            $method = $namedRoutes[$name][0];
-            $url = \AbmmHasan\WebFace\Utility\URL::get('prefix') . ltrim($namedRoutes[$name][1], '/');
-            return [$method, $url];
+            $url = URL::get('prefix') . trim($namedRoutes[$name][1], '/');
+            if (!empty($params)) {
+                $url .= '?' . http_build_query($params, $encoding);
+            }
+            return [
+                $namedRoutes[$name][0],
+                $url
+            ];
         }
         return null;
     }
@@ -87,16 +101,16 @@ if (!function_exists('httpDate')) {
      */
     function httpDate(mixed $date = null): string
     {
-        if ($date instanceof \DateTime) {
-            $date = \DateTimeImmutable::createFromMutable($date);
+        if ($date instanceof DateTime) {
+            $date = DateTimeImmutable::createFromMutable($date);
         } else {
-            $date = new \DateTime($date);
+            $date = new DateTime($date);
         }
 
         try {
-            $date->setTimeZone(new \DateTimeZone('UTC'));
+            $date->setTimeZone(new DateTimeZone('UTC'));
         } catch (\Exception $e) {
-            $date = new \DateTime('0001-01-01', new \DateTimeZone('UTC'));
+            $date = new DateTime('0001-01-01', new DateTimeZone('UTC'));
         } finally {
             return $date->format('D, d M Y H:i:s') . ' GMT';
         }

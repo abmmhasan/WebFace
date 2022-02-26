@@ -3,24 +3,27 @@
 
 namespace AbmmHasan\WebFace;
 
-use AbmmHasan\WebFace\Base\BaseResponse;
 use AbmmHasan\WebFace\Support\HTTPResource;
 use AbmmHasan\WebFace\Support\ResponseDepot;
+use Exception;
 use InvalidArgumentException;
 
 final class Response
 {
-    private static $instance;
+    private static Response $instance;
     /**
      * @var array|string[]
      */
-    protected $applicableFormat = [
+    protected array $applicableFormat = [
         'render',
         'json',
         'xml',
         'csv'
     ];
 
+    /**
+     * @throws Exception
+     */
     public function __construct()
     {
         $modCache = ResponseDepot::getCache();
@@ -38,7 +41,7 @@ final class Response
         } elseif ($response_type === 'status') {
             (self::$instance)->setStatus(...$parameters);
         } elseif (!in_array($response_type, (self::$instance)->applicableFormat)) {
-            throw new \Exception("Unknown reponse type '$response_type' detected!");
+            throw new Exception("Unknown reponse type '$response_type' detected!");
         }
         (self::$instance)->setContent($parameters[0], $response_type);
         if (isset($parameters[1])) {
@@ -63,7 +66,7 @@ final class Response
      * @param string $value
      * @param bool $append
      */
-    private function setHeader($label, $value = '', $append = true)
+    private function setHeader($label, string $value = '', bool $append = true)
     {
         ResponseDepot::setHeader($label, $value, $append);
     }
@@ -112,10 +115,9 @@ final class Response
      * Easy Understanding: https://www.keycdn.com/blog/http-cache-headers
      *
      * @param array $options
-     * @return object
-     * @throws \Exception
+     * @throws Exception
      */
-    private function setCache(array $options): object
+    private function setCache(array $options)
     {
         // Check if keys are applicable
         if ($diff = array_diff(array_keys($options), array_keys(HTTPResource::$cache))) {
@@ -125,13 +127,13 @@ final class Response
         }
 
         // Cache Control Directives
-        self::setControlCache($options);
+        $this->setControlCache($options);
 
         // Special Headers
-        self::setSpecial($options);
+        $this->setSpecial($options);
 
         // Modifiers
-        self::setModifier($options);
+        $this->setModifier($options);
     }
 
     /**
@@ -193,35 +195,33 @@ final class Response
      *
      * @param $options
      */
-    private function setSpecial($option)
+    private function setSpecial($options)
     {
         $specialCache = ResponseDepot::getCache('special');
-        if (isset($options['vary'])) {
-            if (null === $options['vary']) {
-                unset($specialCache['Vary']);
-            } else {
-                if ($diff = array_diff(
-                    (array)$options['vary'],
-                    [
-                        'Accept-Encoding',
-                        'Accept-Language',
-                        'DPR',
-                        'Content-DPR',
-                        'Width',
-                        'Viewport-Width',
-                        'Device-Memory',
-                        'RTT',
-                        'Downlink',
-                        'ECT',
-                        'Save-Data'
-                    ]
-                )) {
-                    throw new InvalidArgumentException(
-                        sprintf("Vary header can't be used the following options: '%s'.", implode('", "', $diff))
-                    );
-                }
-                $specialCache['Vary'] = (array)$options['vary'];
+        if (!isset($options['vary'])) {
+            unset($specialCache['Vary']);
+        } else {
+            if ($diff = array_diff(
+                (array)$options['vary'],
+                [
+                    'Accept-Encoding',
+                    'Accept-Language',
+                    'DPR',
+                    'Content-DPR',
+                    'Width',
+                    'Viewport-Width',
+                    'Device-Memory',
+                    'RTT',
+                    'Downlink',
+                    'ECT',
+                    'Save-Data'
+                ]
+            )) {
+                throw new InvalidArgumentException(
+                    sprintf("Vary header can't be used with the following options: '%s'.", implode('", "', $diff))
+                );
             }
+            $specialCache['Vary'] = (array)$options['vary'];
         }
         ResponseDepot::setCache('special', $specialCache);
     }
@@ -232,31 +232,26 @@ final class Response
      * Last Modified, Date, ETag
      *
      * @param $options
-     * @throws \Exception
+     * @throws Exception
      */
     private function setModifier($options)
     {
         $modCache = ResponseDepot::getCache();
-        if (isset($options['last_modified'])) {
-            if (null === $options['last_modified']) {
-                unset($modCache['Last-Modified']);
-            } else {
-                $modCache['Last-Modified'] = httpDate($options['last_modified']);
+        if (!isset($options['last_modified'])) {
+            unset($modCache['Last-Modified']);
+        } else {
+            $modCache['Last-Modified'] = httpDate($options['last_modified']);
+        }
+        if (!isset($options['etag'])) {
+            unset($modCache['ETag']);
+        } else {
+            if (!str_starts_with($options['etag'], '"')) {
+                $options['etag'] = $this->prepareStringQuote($options['etag']);
             }
+            $modCache['ETag'] = trim($options['etag']);
         }
 
-        if (isset($options['etag'])) {
-            if (null === $options['etag']) {
-                unset($modCache['ETag']);
-            } else {
-                if (0 !== strpos($options['etag'], '"')) {
-                    $options['etag'] = $this->prepareStringQuote($options['etag']);
-                }
-                $modCache['ETag'] = trim($options['etag']);
-            }
-        }
-
-        if (isset($options['date']) && !is_null($options['date'])) {
+        if (isset($options['date'])) {
             $modCache['Date'] = httpDate($options['date']);
         }
         ResponseDepot::setCache($modCache);
@@ -266,9 +261,9 @@ final class Response
      * Add Quote to a string
      *
      * @param string $string
-     * @return string|string[]|null
+     * @return string
      */
-    private function prepareStringQuote(string $string)
+    private function prepareStringQuote(string $string): string
     {
         $string = preg_replace('/\\\\(.)|"/', '$1', trim($string));
         return '"' . addcslashes($string, '"\\"') . '"';
@@ -324,9 +319,9 @@ final class Response
      * @param string $disposition
      * @param string $filename
      * @param string $filenameFallback
-     * @return BaseResponse
+     * @return Response
      */
-    public function setDisposition(string $disposition, string $filename = '', string $filenameFallback = '')
+    public function setDisposition(string $disposition, string $filename = '', string $filenameFallback = ''): Response
     {
         if (!in_array($disposition, ['inline', 'attachment'])) {
             throw new \InvalidArgumentException('The disposition must be either "inline" or "attachment".');
@@ -336,22 +331,22 @@ final class Response
             $filenameFallback = $filename;
         }
 
-        if (!preg_match('/^[\x20-\x7e]*$/', $filenameFallback) || false !== strpos($filenameFallback, '%')) {
+        if (!preg_match('/^[\x20-\x7e]*$/', $filenameFallback) || str_contains($filenameFallback, '%')) {
             throw new \InvalidArgumentException('The filename fallback must only contain ASCII (except %) characters.');
         }
 
-        if (false !== strpos($filename, '/') || false !== strpos($filename, '\\') ||
-            false !== strpos($filenameFallback, '/') || false !== strpos($filenameFallback, '\\')) {
+        if (str_contains($filename, '/') || str_contains($filename, '\\') ||
+            str_contains($filenameFallback, '/') || str_contains($filenameFallback, '\\')) {
             throw new \InvalidArgumentException(
                 'The filename and the fallback cannot contain the "/" and "\\" characters.'
             );
         }
 
-        $params[] = "filename=" . self::prepareStringQuote($filenameFallback);
+        $params[] = "filename=" . $this->prepareStringQuote($filenameFallback);
         if ($filename !== $filenameFallback) {
-            $params[] = "filename*=" . self::prepareStringQuote("utf-8''" . rawurlencode($filename));
+            $params[] = "filename*=" . $this->prepareStringQuote("utf-8''" . rawurlencode($filename));
         }
-        self::setHeader('Content-Disposition', "{$disposition}; " . implode('; ', $params), false);
+        $this->setHeader('Content-Disposition', "{$disposition}; " . implode('; ', $params), false);
         return self::$instance;
     }
 }

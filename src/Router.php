@@ -7,6 +7,7 @@ use AbmmHasan\WebFace\Support\ResponseDepot;
 use AbmmHasan\WebFace\Support\Settings;
 use AbmmHasan\WebFace\Utility\URL;
 use BadMethodCallException;
+use Exception;
 
 /**
  * Class Router.
@@ -99,11 +100,13 @@ final class Router extends BaseRoute
     }
 
     /**
+     * Run router
+     * 
      * @param bool $flash
-     * @return bool
-     * @throws \Exception
+     * @return bool|int
+     * @throws Exception
      */
-    public function run($flash = true)
+    public function run(bool $flash = true): bool|int
     {
         if (php_sapi_name() === 'cli') {
             return true;

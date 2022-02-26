@@ -316,11 +316,10 @@ abstract class BaseRoute
     {
         $params = array_filter(explode(',', $params));
         if ($fn instanceof \Closure) {
-            Container::registerClosure('1', $fn, $params)
+            return Container::registerClosure('1', $fn, $params)
                 ->callClosure('1');
-        } else {
-            return Container::registerMethod($fn, Settings::$middleware_call_on_method, $params)
-                ->callMethod($fn);
         }
+        return Container::registerMethod($fn, Settings::$middleware_call_on_method, $params)
+            ->callMethod($fn);
     }
 }

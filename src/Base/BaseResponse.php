@@ -10,6 +10,7 @@ use AbmmHasan\WebFace\Support\Settings;
 use AbmmHasan\WebFace\Utility\Headers;
 use AbmmHasan\WebFace\Utility\URL;
 use ArrayObject;
+use Exception;
 use JsonSerializable;
 
 /**
@@ -23,11 +24,11 @@ class BaseResponse extends BaseRequest
      *
      * This is still experimental
      *
-     * @param $type
+     * @param string $type
      * @param bool $all
      * @return mixed
      */
-    private function getTypeHeader($type, $all = false)
+    private function getTypeHeader(string $type, bool $all = false): mixed
     {
         $heads = [
             'html' => ['text/html', 'application/xhtml+xml'],
@@ -48,7 +49,7 @@ class BaseResponse extends BaseRequest
     /**
      * Prepare & Send all the headers & Cookies
      *
-     * @throws \Exception
+     * @throws Exception
      */
     protected function sendHeaders()
     {
@@ -75,11 +76,11 @@ class BaseResponse extends BaseRequest
         // Set Cookies
         if (!empty($responseCookies = ResponseDepot::getCookie())) {
             $expire = httpDate(date(DATE_ATOM, time() + (Settings::$cookie_lifetime * 60)));
-            $isSecure = (bool)Settings::$cookie_is_secure && URL::get('scheme') === 'https';
+            $isSecure = Settings::$cookie_is_secure && URL::get('scheme') === 'https';
             foreach ($responseCookies as $name => $cookie) {
                 if (!$isSecure && $cookie['samesite'] === 'None') {
                     header_remove();
-                    throw new \Exception("Cookie ($name) with 'SameSite=None' attribute, must also specify the Secure attribute");
+                    throw new Exception("Cookie ($name) with 'SameSite=None' attribute, must also specify the Secure attribute");
                 }
                 header('Set-Cookie: ' . rawurlencode($name) . '=' . rawurlencode($cookie['value'])
                     . '; Expires=' . $expire
@@ -88,7 +89,7 @@ class BaseResponse extends BaseRequest
                     . (empty(Settings::$cookie_path) ? '' : '; Path=' . Settings::$cookie_path)
                     . '; SameSite=' . $cookie['samesite']
                     . (!$isSecure ? '' : '; Secure')
-                    . (!(bool)Settings::$cookie_http_only ? '' : '; HttpOnly'), false);
+                    . (!Settings::$cookie_http_only ? '' : '; HttpOnly'), false);
             }
         }
     }
@@ -99,11 +100,12 @@ class BaseResponse extends BaseRequest
      * RFC 2616
      *
      * @return bool
+     * @throws Exception
      */
     private function notModified(): bool
     {
         $notModified = false;
-        if (URL::getMethod('converted') === 'GET') {
+        if (ResponseDepot::$code !== 304 && URL::getMethod('converted') === 'GET') {
             $cacheHeaders = ResponseDepot::getCache();
             $lastModified = $cacheHeaders['Last-Modified'] ?? null;
             $modifiedSince = Headers::responseDependency('if_modified_since');
@@ -158,6 +160,7 @@ class BaseResponse extends BaseRequest
      * RFC 2616
      *
      * @return void
+     * @throws Exception
      */
     private function prepare(): void
     {
@@ -232,7 +235,7 @@ class BaseResponse extends BaseRequest
      *
      * @return mixed|string[]
      */
-    private function computeCacheControl($cacheVariables)
+    private function computeCacheControl($cacheVariables): mixed
     {
         if (empty($cacheVariables['control'])) {
             if (isset($cacheVariables['Last-Modified'])) {
@@ -252,10 +255,7 @@ class BaseResponse extends BaseRequest
         if (isset($cacheVariables['control']['visibility'])) {
             return $cacheVariables['control'];
         }
-
-        if (!isset($cacheVariables['control']['s-maxage'])) {
-            $cacheVariables['control']['visibility'] = 'private';
-        }
+        $cacheVariables['control']['visibility'] = 'private';
         return $cacheVariables['control'];
     }
 
@@ -265,6 +265,7 @@ class BaseResponse extends BaseRequest
      * RFC 7231, RFC 7234, RFC 8674
      *
      * @return void
+     * @throws Exception
      */
     private function prepareCacheHeader()
     {
@@ -277,10 +278,6 @@ class BaseResponse extends BaseRequest
             }
         }
         unset($cacheVariables['control']);
-        if (Headers::responseDependency('prefer_safe')) {
-            $cacheVariables['special']['Vary'][] = 'Prefer';
-            ResponseDepot::setHeader('Preference-Applied', 'safe');
-        }
         if (isset($cacheVariables['special'])) {
             foreach ($cacheVariables['special'] as $label => $value) {
                 ResponseDepot::setHeader($label, implode(',', $value));
@@ -294,7 +291,13 @@ class BaseResponse extends BaseRequest
         }
     }
 
-    private function contentParser($content)
+    /**
+     * Get response
+     *
+     * @param $content
+     * @return ArrayObject|false|mixed|string
+     */
+    private function contentParser($content): mixed
     {
         $shouldBeJSON = ResponseDepot::$contentType == 'json' || $content instanceof JsonSerializable;
         $isArray = $content instanceof ArrayObject || is_array($content);
@@ -305,7 +308,11 @@ class BaseResponse extends BaseRequest
         return $content;
     }
 
-    private function handleContent()
+    /**
+     *
+     * @return false|int|null
+     */
+    private function handleContent(): bool|int|null
     {
         $length = null;
         if (!empty(ResponseDepot::$content)) {
@@ -322,7 +329,7 @@ class BaseResponse extends BaseRequest
     /**
      * Sends output
      *
-     * @throws \Exception
+     * @throws Exception
      */
     public function helloWorld($targetFlashLevel = 0)
     {
@@ -344,7 +351,11 @@ class BaseResponse extends BaseRequest
             $level = count($status);
             $flags = PHP_OUTPUT_HANDLER_REMOVABLE | ($flushable ? PHP_OUTPUT_HANDLER_FLUSHABLE : PHP_OUTPUT_HANDLER_CLEANABLE);
 
-            while ($level-- > $targetFlashLevel && ($s = $status[$level]) && (!isset($s['del']) ? !isset($s['flags']) || ($s['flags'] & $flags) === $flags : $s['del'])) {
+            while (
+                $level-- > $targetFlashLevel &&
+                ($s = $status[$level]) &&
+                (!isset($s['del']) ? !isset($s['flags']) || ($s['flags'] & $flags) === $flags : $s['del'])
+            ) {
                 if ($flushable) {
                     ob_end_flush();
                 } else {

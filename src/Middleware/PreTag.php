@@ -84,7 +84,7 @@ class PreTag
     private function compareDependency(): array|bool
     {
         $route = explode(" ", RouteDepot::getCurrentRoute(), 2);
-        if (is_null($this->asset) || !isset($this->asset[$route[1]])) {
+        if (!isset($this->asset[$route[1] ?? ''])) {
             return true;
         }
         $dependencies = Headers::responseDependency();
