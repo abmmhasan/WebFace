@@ -5,39 +5,47 @@ namespace AbmmHasan\WebFace;
 
 
 use AbmmHasan\WebFace\Base\BaseResponse;
+use AbmmHasan\WebFace\Support\ResponseDepot;
+use Exception;
 
+/**
+ * @method static to(string $url, array $headers = []) Temporarily unavailable (GET request only)
+ * @method static other(string $url, array $headers = []) Redirect after put or post (disable re-triggering the request)
+ * @method static temporary(string $url, array $headers = []) Temporarily unavailable (non-GET request)
+ * @method static permanent(string $url, array $headers = []) Link moved permanently (indicates reorganization but body not changed) for non-GET request
+ * @method static moved(string $url, array $headers = []) Link moved permanently (indicates reorganization) for GET request
+ */
 final class Redirect extends BaseResponse
 {
     /**
      * Redirect to a location
      *
-     * @param string $url
-     * @param $status
-     * @param array $headers
+     * Reference: https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections
+     *
+     * @param string $response_type
+     * @param array $parameters
+     * @throws Exception
      */
-    public static function __callStatic(string $response_type = 'to', $parameters = [])
+    public static function __callStatic(string $response_type = 'to', array $parameters = [])
     {
-        $url = array_shift($parameters);
-        $headers = $parameters;
         $available = [
-            'created' => 201,
-            'movedPermanently' => 301,
-            'to' => 302,
-            'found' => 302,
-            'afterPost' => 303,
-            'seeOther' => 303,
-            'temporaryRedirect' => 307,
-            'permanentRedirect' => 308,
+            // Permanent redirection
+            'moved' => 301, // link moved permanently (indicates reorganization) for GET request
+            'permanent' => 308, // link moved permanently (indicates reorganization but body not changed) for non-GET request
+            // Temporary redirection
+            'to' => 302, // temporarily unavailable (GET request only)
+            'other' => 303, // redirect after put or post (disable re-trigger)
+            'temporary' => 307, // temporarily unavailable (non-GET request)
+
         ];
 
-        if (!(in_array($response_type, array_keys($available)) || in_array($response_type, $available))) {
-            throw new \InvalidArgumentException("The HTTP status code is not a redirect (found '{$response_type}').");
+        if (!isset($available[$response_type])) {
+            throw new \InvalidArgumentException("Invalid redirect command (found '{$response_type}')!");
         }
-        if (empty($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
+        if (empty($parameters[0]) || !filter_var($parameters[0], FILTER_VALIDATE_URL)) {
             throw new \InvalidArgumentException('Invalid URL');
         }
-
-        $instance = new self(sprintf(
+        ResponseDepot::$content = sprintf(
             '<!DOCTYPE html>
                 <html>
                     <head>
@@ -49,11 +57,15 @@ final class Redirect extends BaseResponse
                         Redirecting to <a href="%1$s">%1$s</a>.
                     </body>
                 </html>',
-            htmlspecialchars($url, ENT_QUOTES, 'UTF-8')
-        ),
-            $available[$response_type] ?? $response_type,
-            $headers);
-        $instance->setHeader('Location', $url, false);
-        $instance->helloWorld();
+            htmlspecialchars($parameters[0], ENT_QUOTES)
+        );
+        if (!empty($parameters[1])) {
+            foreach ($parameters[1] as $name => $value) {
+                ResponseDepot::setHeader($name, $value, false);
+            }
+        }
+        ResponseDepot::$code = $available[$response_type];
+        ResponseDepot::setHeader('Location', $parameters[0], false);
+        (new self)->helloWorld();
     }
 }

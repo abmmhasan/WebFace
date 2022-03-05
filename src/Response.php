@@ -8,6 +8,15 @@ use AbmmHasan\WebFace\Support\ResponseDepot;
 use Exception;
 use InvalidArgumentException;
 
+/**
+ * @method static Response json(string|array $content, int $status = 200, array $headers = []) Set JSON response
+ * @method Response setCache(array $options) Set Cache headers
+ * @method Response setCharset(string $charset) Set charset (If omitted it will check request charset; default UTF-8)
+ * @method Response setCookie(string $name, string $value, int $max_age = null, array $same_site = []) Cookie Setter
+ * @method Response setContent($content, $type) Set Content
+ * @method Response setHeaderByGroup(array $headers) Set multiple headers at a time
+ * @method Response setHeader($label, string $value = '', bool $append = true) Set Header
+ */
 final class Response
 {
     private static Response $instance;
@@ -39,23 +48,24 @@ final class Response
         if ($response_type === 'instance') {
             return self::$instance;
         } elseif ($response_type === 'status') {
-            (self::$instance)->setStatus(...$parameters);
+            (self::$instance)->setStatus($parameters[0]);
         } elseif (!in_array($response_type, (self::$instance)->applicableFormat)) {
             throw new Exception("Unknown reponse type '$response_type' detected!");
         }
-        (self::$instance)->setContent($parameters[0], $response_type);
+        (self::$instance)->_setContent($parameters[0], $response_type);
         if (isset($parameters[1])) {
             (self::$instance)->setStatus($parameters[1]);
         }
         if (isset($parameters[2])) {
-            (self::$instance)->setHeaderByGroup((array)$parameters[2]);
+            (self::$instance)->_setHeaderByGroup((array)$parameters[2]);
         }
         return self::$instance;
     }
 
     public function __call($response_type, $parameters)
     {
-        (self::$instance)->$response_type(...$parameters);
+        $call = '_' . $response_type;
+        (self::$instance)->$call(...$parameters);
         return self::$instance;
     }
 
@@ -66,7 +76,7 @@ final class Response
      * @param string $value
      * @param bool $append
      */
-    private function setHeader($label, string $value = '', bool $append = true)
+    private function _setHeader($label, string $value = '', bool $append = true)
     {
         ResponseDepot::setHeader($label, $value, $append);
     }
@@ -90,10 +100,10 @@ final class Response
      *
      * @param array $headers
      */
-    private function setHeaderByGroup(array $headers)
+    private function _setHeaderByGroup(array $headers)
     {
         foreach ($headers as $name => $value) {
-            $this->setHeader($name, $value, false);
+            $this->_setHeader($name, $value, false);
         }
     }
 
@@ -103,7 +113,7 @@ final class Response
      * @param $content
      * @param $type
      */
-    private function setContent($content, $type)
+    private function _setContent($content, $type)
     {
         ResponseDepot::$contentType = $type;
         ResponseDepot::$content = $content;
@@ -117,7 +127,7 @@ final class Response
      * @param array $options
      * @throws Exception
      */
-    private function setCache(array $options)
+    private function _setCache(array $options)
     {
         // Check if keys are applicable
         if ($diff = array_diff(array_keys($options), array_keys(HTTPResource::$cache))) {
@@ -273,12 +283,12 @@ final class Response
     /**
      * Cookie Setter
      *
-     * @param $name
-     * @param $value
+     * @param string $name
+     * @param string $value
      * @param int|null $max_age
      * @param array $same_site
      */
-    private function setCookie($name, $value, int $max_age = null, array $same_site = [])
+    private function _setCookie(string $name, string $value, int $max_age = null, array $same_site = [])
     {
         if (!empty($same_site) && !in_array($same_site, ['Strict', 'Lax', 'None'])) {
             throw new InvalidArgumentException(
@@ -306,7 +316,7 @@ final class Response
      *
      * @param string $charset
      */
-    private function setCharset(string $charset)
+    private function _setCharset(string $charset)
     {
         ResponseDepot::$charset = $charset;
     }

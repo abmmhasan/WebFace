@@ -35,7 +35,7 @@ final class Router extends BaseRoute
      *
      * @param $method
      * @param $params
-     * @return bool
+     * @return bool|void
      */
     public function __call($method, $params)
     {
@@ -101,7 +101,7 @@ final class Router extends BaseRoute
 
     /**
      * Run router
-     * 
+     *
      * @param bool $flash
      * @return bool|int
      * @throws Exception

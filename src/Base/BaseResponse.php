@@ -17,7 +17,7 @@ use JsonSerializable;
  * Class BaseResponse
  * @package Inspect\Core\BaseRequest
  */
-class BaseResponse extends BaseRequest
+abstract class BaseResponse extends BaseRequest
 {
     /**
      * Checks if eligible header found
@@ -47,7 +47,7 @@ class BaseResponse extends BaseRequest
     }
 
     /**
-     * Prepare & Send all the headers & Cookies
+     * Prepare & Send all the headers (Cookies included)
      *
      * @throws Exception
      */
@@ -271,7 +271,7 @@ class BaseResponse extends BaseRequest
     {
         $cacheVariables = ResponseDepot::getCache();
         if (in_array(URL::getMethod('converted'), ['GET', 'POST']) &&
-            in_array(ResponseDepot::$code, [200, 203, 204, 206, 300, 404, 405, 410, 414, 501])) {
+            in_array(ResponseDepot::$code, [200, 203, 204, 206, 300, 301, 404, 405, 410, 414, 501])) {
             $control = array_values($this->computeCacheControl($cacheVariables));
             if (!empty($control)) {
                 ResponseDepot::setHeader('Cache-Control', implode(',', $control));

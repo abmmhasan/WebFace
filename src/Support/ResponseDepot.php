@@ -15,7 +15,15 @@ final class ResponseDepot
     private static array $cacheHeader = [];
     private static array $cookieHeader = [];
 
-    public static function setHeader($label, $value = '', $append = true)
+    /**
+     * Set header
+     *
+     * @param $label
+     * @param string $value
+     * @param bool $append
+     * @return void
+     */
+    public static function setHeader($label, string $value = '', bool $append = true)
     {
         $label = preg_replace('/[^a-zA-Z0-9-]/', '', $label);
         $label = ucwords($label, "-");
@@ -35,7 +43,13 @@ final class ResponseDepot
         self::$header = $header;
     }
 
-    public static function getHeader($label = null)
+    /**
+     * Get header
+     *
+     * @param $label
+     * @return array|mixed|string
+     */
+    public static function getHeader($label = null): mixed
     {
         if (is_null($label)) {
             return self::$header;
@@ -43,7 +57,40 @@ final class ResponseDepot
         return self::$header[$label] ?? '';
     }
 
-    public static function setCache($header, $value = null)
+    /**
+     * Set content/body & type
+     *
+     * @param string|array $content
+     * @param string $type
+     * @return void
+     */
+    public static function setContent(string|array $content, string $type = 'json')
+    {
+        self::$contentType = $type;
+        self::$content = $content;
+    }
+
+    /**
+     * Get content/body & type
+     *
+     * @return array
+     */
+    public static function getContent(): array
+    {
+        return [
+            'type' => self::$contentType,
+            'content' => self::$content,
+        ];
+    }
+
+    /**
+     * Set cache header
+     *
+     * @param array|string $header
+     * @param string|null $value
+     * @return void
+     */
+    public static function setCache(array|string $header, ?string $value = null)
     {
         if (is_null($value)) {
             self::$cacheHeader = $header;
@@ -52,7 +99,13 @@ final class ResponseDepot
         }
     }
 
-    public static function getCache($label = null)
+    /**
+     * Get cache header
+     *
+     * @param string|null $label
+     * @return array|mixed
+     */
+    public static function getCache(?string $label = null): mixed
     {
         if (is_null($label)) {
             return self::$cacheHeader;
@@ -60,7 +113,14 @@ final class ResponseDepot
         return self::$cacheHeader[$label] ?? [];
     }
 
-    public static function setCookie($header, $value = null)
+    /**
+     * Set cookie
+     *
+     * @param array|string $header
+     * @param string|null $value
+     * @return void
+     */
+    public static function setCookie(array|string $header, ?string $value = null)
     {
         if (is_null($value)) {
             self::$cookieHeader = $header;
@@ -69,7 +129,13 @@ final class ResponseDepot
         }
     }
 
-    public static function getCookie($label = null)
+    /**
+     * Get cookie
+     *
+     * @param string|null $label
+     * @return mixed
+     */
+    public static function getCookie(?string $label = null): mixed
     {
         if (is_null($label)) {
             return self::$cookieHeader;
