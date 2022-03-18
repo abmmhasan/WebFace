@@ -172,7 +172,7 @@ abstract class BaseResponse extends BaseRequest
         $setHeaders = ResponseDepot::getHeader();
         // Content-type based on the Request
         if (!isset($setHeaders['Content-Type']) && !empty($eligible = ResponseDepot::$contentType)) {
-            $parsed = self::getTypeHeader($eligible, true);
+            $parsed = $this->getTypeHeader($eligible, true);
             $fromRequest = Headers::content('type') ?? $parsed[0];
             if (in_array($fromRequest, $parsed)) {
                 ResponseDepot::setHeader('Content-Type', $fromRequest, false);
@@ -318,7 +318,7 @@ abstract class BaseResponse extends BaseRequest
         if (!empty(ResponseDepot::$content)) {
             ob_start();
             ob_start("ob_gzhandler");
-            echo self::contentParser(ResponseDepot::$content);
+            echo $this->contentParser(ResponseDepot::$content);
             ob_get_flush();
             $length = ob_get_length();
             ob_get_flush();

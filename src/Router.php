@@ -42,7 +42,7 @@ final class Router extends BaseRoute
         if ($this->cacheLoaded) {
             return true;
         }
-        if (is_null($params) && count($params) !== 2) {
+        if (empty($params) || count($params) !== 2) {
             return false;
         }
         $this->match([$method], $params[0], $params[1]);

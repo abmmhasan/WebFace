@@ -121,7 +121,7 @@ final class Headers extends Utility
                 'type' => $type,
                 'charset' => $charset,
                 'length' => self::$headers['Content-Length'] ?? 0,
-                'md5' => strtolower(self::$headers['Content-Md5'] ?? null)
+                'md5' => strtolower(self::$headers['Content-Md5'] ?? '')
             ]);
         }
         return self::getValue(self::$content, $key);

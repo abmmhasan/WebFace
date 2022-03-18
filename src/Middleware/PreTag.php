@@ -21,7 +21,7 @@ class PreTag
     public function handle(): array|bool
     {
         $this->loadAsset();
-        return self::compareDependency();
+        return $this->compareDependency();
     }
 
     /**

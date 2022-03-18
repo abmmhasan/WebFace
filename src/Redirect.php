@@ -6,14 +6,13 @@ namespace AbmmHasan\WebFace;
 
 use AbmmHasan\WebFace\Base\BaseResponse;
 use AbmmHasan\WebFace\Support\ResponseDepot;
+use AbmmHasan\WebFace\Utility\URL;
 use Exception;
 
 /**
- * @method static to(string $url, array $headers = []) Temporarily unavailable (GET request only)
+ * @method static to(string $url, array $headers = []) Temporarily unavailable
  * @method static other(string $url, array $headers = []) Redirect after put or post (disable re-triggering the request)
- * @method static temporary(string $url, array $headers = []) Temporarily unavailable (non-GET request)
- * @method static permanent(string $url, array $headers = []) Link moved permanently (indicates reorganization but body not changed) for non-GET request
- * @method static moved(string $url, array $headers = []) Link moved permanently (indicates reorganization) for GET request
+ * @method static moved(string $url, array $headers = []) Link moved permanently (indicates reorganization)
  */
 final class Redirect extends BaseResponse
 {
@@ -28,16 +27,25 @@ final class Redirect extends BaseResponse
      */
     public static function __callStatic(string $response_type = 'to', array $parameters = [])
     {
-        $available = [
-            // Permanent redirection
-            'moved' => 301, // link moved permanently (indicates reorganization) for GET request
-            'permanent' => 308, // link moved permanently (indicates reorganization but body not changed) for non-GET request
-            // Temporary redirection
-            'to' => 302, // temporarily unavailable (GET request only)
-            'other' => 303, // redirect after put or post (disable re-trigger)
-            'temporary' => 307, // temporarily unavailable (non-GET request)
-
-        ];
+        $available = match (URL::getMethod('converted')) {
+            'GET' => [
+                // Permanent redirection
+                'moved' => 301, // link moved permanently (indicates reorganization)
+                // Temporary redirection
+                'to' => 302, // temporarily unavailable
+            ],
+            ['POST', 'PUT'] => [
+                // Permanent redirection
+                'moved' => 308, // link moved permanently (indicates reorganization but body not changed)
+                // Temporary redirection
+                'other' => 303, // redirect for disabling submission re-trigger
+                'to' => 307, // temporarily unavailable
+            ],
+            default => [
+                'moved' => 308,
+                'to' => 307,
+            ]
+        };
 
         if (!isset($available[$response_type])) {
             throw new \InvalidArgumentException("Invalid redirect command (found '{$response_type}')!");

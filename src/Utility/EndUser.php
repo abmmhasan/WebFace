@@ -89,7 +89,7 @@ final class EndUser extends Utility
      */
     public static function checkIP(array|string $ips, $checkIP = null): bool
     {
-        $ips = is_array($ips) ? $ips : [$ips];
+        $ips = (array)$ips;
         self::ip();
 
         $check = $checkIP ?? self::$clientIp;
@@ -97,7 +97,7 @@ final class EndUser extends Utility
         $method = substr_count($check, ':') > 1 ? 'checkIp6' : 'checkIp4';
 
         foreach ($ips as $ip) {
-            if (self::$method($ip, $check)) {
+            if (self::$method($check, $ip)) {
                 return true;
             }
         }
@@ -121,7 +121,7 @@ final class EndUser extends Utility
         }
 
         $packedAddress = inet_pton($ip);
-        if (4 === \strlen($packedAddress)) {
+        if (4 === strlen($packedAddress)) {
             $mask = '255.255.255.0';
         } elseif ($ip === inet_ntop($packedAddress & inet_pton('::ffff:ffff:ffff'))) {
             $mask = '::ffff:ffff:ff00';
@@ -141,25 +141,28 @@ final class EndUser extends Utility
 
     /**
      * Compares two IPv4 addresses.
-     * In case a subnet is given, it checks if it contains the request ClientIP.
+     * In case a subnet is given, it checks if it contains the request IP.
      *
      * @param string $ip IPv4 address or subnet in CIDR notation
-     * @return bool Whether the request ClientIP matches the ClientIP, or whether the request ClientIP is within the CIDR subnet
+     *
+     * @return bool Whether the request IP matches the IP, or whether the request IP is within the CIDR subnet
      */
-    private static function checkIp4(string $ip, $check): bool
+    public static function checkIp4(string $check, string $ip): bool
     {
         $cacheKey = $check . '-' . $ip;
         if (isset(self::$checkedIps[$cacheKey])) {
             return self::$checkedIps[$cacheKey];
         }
+
         if (!filter_var($check, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
             return self::$checkedIps[$cacheKey] = false;
         }
+
         if (str_contains($ip, '/')) {
-            list($address, $netmask) = explode('/', $ip, 2);
+            [$address, $netmask] = explode('/', $ip, 2);
 
             if ('0' === $netmask) {
-                return self::$checkedIps[$cacheKey] = filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === $check;
+                return self::$checkedIps[$cacheKey] = filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4);
             }
 
             if ($netmask < 0 || $netmask > 32) {
@@ -183,31 +186,29 @@ final class EndUser extends Utility
 
     /**
      * Compares two IPv6 addresses.
-     * In case a subnet is given, it checks if it contains the request ClientIP.
+     * In case a subnet is given, it checks if it contains the request IP.
      *
      * @param string $ip IPv6 address or subnet in CIDR notation
      *
-     * @return bool Whether the ClientIP is valid
-     *
      * @throws RuntimeException When IPV6 support is not enabled
-     * @see https://github.com/dsp/v6tools
-     *
      * @author David Soria Parra <dsp at php dot net>
      *
+     * @see https://github.com/dsp/v6tools
+     *
      */
-    private static function checkIp6(string $ip, $check): bool
+    public static function checkIp6(string $check, string $ip): bool
     {
         $cacheKey = $check . '-' . $ip;
         if (isset(self::$checkedIps[$cacheKey])) {
             return self::$checkedIps[$cacheKey];
         }
 
-        if (!((\extension_loaded('sockets') && \defined('AF_INET6')) || @inet_pton('::1'))) {
+        if (!((extension_loaded('sockets') && defined('AF_INET6')) || @inet_pton('::1'))) {
             throw new RuntimeException('Unable to check Ipv6. Check that PHP was not compiled with option "disable-ipv6".');
         }
 
         if (str_contains($ip, '/')) {
-            list($address, $netmask) = explode('/', $ip, 2);
+            [$address, $netmask] = explode('/', $ip, 2);
 
             if ('0' === $netmask) {
                 return (bool)unpack('n*', @inet_pton($address));
@@ -231,7 +232,7 @@ final class EndUser extends Utility
         for ($i = 1, $ceil = ceil($netmask / 16); $i <= $ceil; ++$i) {
             $left = $netmask - 16 * ($i - 1);
             $left = ($left <= 16) ? $left : 16;
-            $mask = ~(0xffff >> $left) & 0xffff;
+            $mask = ~(0xFFFF >> $left) & 0xFFFF;
             if (($bytesAddr[$i] & $mask) != ($bytesTest[$i] & $mask)) {
                 return self::$checkedIps[$cacheKey] = false;
             }
