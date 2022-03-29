@@ -273,10 +273,10 @@ abstract class BaseRoute
                     $eligible = $this->invokeMiddleware($collection[$parameterSeparation[0]], $parameterSeparation[1] ?? '');
                     if ($eligible !== true) {
                         ResponseDepot::$code = $eligible['status'] ?? 403;
-                        ResponseDepot::$content = [
+                        ResponseDepot::setContent([
                             'status' => 'failed',
                             'message' => $eligible['message'] ?? (is_string($eligible) ? $eligible : 'Bad Request')
-                        ];
+                        ]);
                         return false;
                     }
                 }

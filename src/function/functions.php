@@ -1,7 +1,7 @@
 <?php
 
-use AbmmHasan\WebFace\Base\BaseResponse;
 use AbmmHasan\WebFace\Middleware\PreTag;
+use AbmmHasan\WebFace\Response as ResponseAlias;
 use AbmmHasan\WebFace\Support\RouteDepot;
 use AbmmHasan\WebFace\Support\Settings;
 use AbmmHasan\WebFace\Router;
@@ -14,7 +14,7 @@ if (!function_exists('responseFlush')) {
      */
     function responseFlush()
     {
-        (new BaseResponse)->helloWorld();
+        (new ResponseAlias())->helloWorld();
     }
 }
 

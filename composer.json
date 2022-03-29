@@ -28,6 +28,6 @@
   "require": {
     "php": ">=8.0",
     "ext-json": "*",
-    "abmmhasan/oof": "dev-main"
+    "abmmhasan/oof": "^1.0"
   }
 }

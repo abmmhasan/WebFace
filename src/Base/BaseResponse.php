@@ -132,7 +132,7 @@ abstract class BaseResponse extends BaseRequest
     {
         $responseCode = ResponseDepot::$code;
         if (($responseCode >= 100 && $responseCode < 200) || in_array($responseCode, [204, 304])) {
-            ResponseDepot::$content = '';
+            ResponseDepot::setContent('');
             ResponseDepot::setHeader('Content-Type', '', false);
             ResponseDepot::setHeader('Content-Length', '', false);
             ini_set('default_mimetype', '');
@@ -315,10 +315,10 @@ abstract class BaseResponse extends BaseRequest
     private function handleContent(): bool|int|null
     {
         $length = null;
-        if (!empty(ResponseDepot::$content)) {
+        if (!empty(ResponseDepot::getContent())) {
             ob_start();
             ob_start("ob_gzhandler");
-            echo $this->contentParser(ResponseDepot::$content);
+            echo $this->contentParser(ResponseDepot::getContent());
             ob_get_flush();
             $length = ob_get_length();
             ob_get_flush();

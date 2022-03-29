@@ -82,6 +82,7 @@ final class HTTPResource
         508 => 'Loop Detected',
         510 => 'Not Extended',
         511 => 'Network Authentication Required',
+
         // Custom Response Series (unofficial & project specific)
     ];
 

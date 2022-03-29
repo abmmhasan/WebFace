@@ -53,7 +53,7 @@ final class Redirect extends BaseResponse
         if (empty($parameters[0]) || !filter_var($parameters[0], FILTER_VALIDATE_URL)) {
             throw new \InvalidArgumentException('Invalid URL');
         }
-        ResponseDepot::$content = sprintf(
+        ResponseDepot::setContent(sprintf(
             '<!DOCTYPE html>
                 <html>
                     <head>
@@ -66,7 +66,7 @@ final class Redirect extends BaseResponse
                     </body>
                 </html>',
             htmlspecialchars($parameters[0], ENT_QUOTES)
-        );
+        ));
         if (!empty($parameters[1])) {
             foreach ($parameters[1] as $name => $value) {
                 ResponseDepot::setHeader($name, $value, false);

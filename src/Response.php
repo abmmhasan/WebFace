@@ -3,6 +3,7 @@
 
 namespace AbmmHasan\WebFace;
 
+use AbmmHasan\WebFace\Base\BaseResponse;
 use AbmmHasan\WebFace\Support\HTTPResource;
 use AbmmHasan\WebFace\Support\ResponseDepot;
 use Exception;
@@ -11,13 +12,13 @@ use InvalidArgumentException;
 /**
  * @method static Response json(string|array $content, int $status = 200, array $headers = []) Set JSON response
  * @method Response setCache(array $options) Set Cache headers
- * @method Response setCharset(string $charset) Set charset (If omitted it will check request charset; default UTF-8)
+ * @method Response setCharset(string $charset) Set charset (Default: request charset or UTF-8)
  * @method Response setCookie(string $name, string $value, int $max_age = null, array $same_site = []) Cookie Setter
  * @method Response setContent($content, $type) Set Content
  * @method Response setHeaderByGroup(array $headers) Set multiple headers at a time
  * @method Response setHeader($label, string $value = '', bool $append = true) Set Header
  */
-final class Response
+final class Response extends BaseResponse
 {
     private static Response $instance;
     /**
@@ -26,7 +27,6 @@ final class Response
     protected array $applicableFormat = [
         'render',
         'json',
-        'xml',
         'csv'
     ];
 
@@ -35,11 +35,16 @@ final class Response
      */
     public function __construct()
     {
-        $modCache = ResponseDepot::getCache();
-        $modCache['Date'] = httpDate();
-        ResponseDepot::setCache($modCache);
+        ResponseDepot::setCache('Date', httpDate());
+        parent::__construct();
     }
 
+    /**
+     * @param string $response_type
+     * @param array $parameters
+     * @return Response
+     * @throws Exception
+     */
     public static function __callStatic(string $response_type, array $parameters = [])
     {
 
@@ -116,7 +121,7 @@ final class Response
     private function _setContent($content, $type)
     {
         ResponseDepot::$contentType = $type;
-        ResponseDepot::$content = $content;
+        ResponseDepot::setContent($content);
     }
 
     /**
@@ -154,7 +159,7 @@ final class Response
      *
      * @param $options
      */
-    private function setControlCache($options)
+    private function _setCacheControl($options)
     {
         $controlCache = ResponseDepot::getCache('control');
         foreach (HTTPResource::$cache as $directive => $hasValue) {
@@ -167,7 +172,7 @@ final class Response
             }
         }
 
-        // Setting up cache type: public(if need intermediate caching) or private
+        // Setting up cache type: public(if intermediate caching) or private
         if (isset($options['private']) && $options['private']) {
             $controlCache['visibility'] = 'private';
         } elseif (isset($options['public']) && $options['public']) {
@@ -187,8 +192,8 @@ final class Response
             $controlCache['stale_while_revalidate'] = 'stale-while-revalidate=' . $options['stale_while_revalidate'];
         }
 
-        if (isset($options['stale_while_revalidate'])) {
-            $controlCache['stale_while_revalidate'] = 'stale-while-revalidate=' . $options['stale_while_revalidate'];
+        if (isset($options['stale_if_error'])) {
+            $controlCache['stale_if_error'] = 'stale-if-error=' . $options['stale_if_error'];
         }
         ResponseDepot::setCache('control', $controlCache);
     }

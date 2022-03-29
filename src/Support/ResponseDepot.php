@@ -8,22 +8,22 @@ final class ResponseDepot
 {
     public static int $code = 200;
     public static string $contentType = 'json';
-    public static string|array $content = '';
     public static string $charset = 'UTF-8';
 
     private static array $header = [];
     private static array $cacheHeader = [];
     private static array $cookieHeader = [];
+    private static string|array $content = '';
 
     /**
      * Set header
      *
      * @param $label
-     * @param string $value
+     * @param string|null $value
      * @param bool $append
      * @return void
      */
-    public static function setHeader($label, string $value = '', bool $append = true)
+    public static function setHeader($label, ?string $value = null, bool $append = true)
     {
         $label = preg_replace('/[^a-zA-Z0-9-]/', '', $label);
         $label = ucwords($label, "-");
@@ -33,9 +33,9 @@ final class ResponseDepot
         if ($label === 'Content-Type' && isset($header['Content-Type'])) {
             $append = false;
         }
-        if ($append && $value !== '') {
+        if ($append && !empty($value)) {
             $header[$label][] = $value;
-        } elseif (!$append && $value === '') {
+        } elseif (!$append && empty($value)) {
             unset($header[$label]);
         } elseif (!$append) {
             $header[$label] = [$value];
@@ -61,41 +61,36 @@ final class ResponseDepot
      * Set content/body & type
      *
      * @param string|array $content
-     * @param string $type
      * @return void
      */
-    public static function setContent(string|array $content, string $type = 'json')
+    public static function setContent(string|array $content)
     {
-        self::$contentType = $type;
         self::$content = $content;
     }
 
     /**
      * Get content/body & type
      *
-     * @return array
+     * @return string|array
      */
-    public static function getContent(): array
+    public static function getContent(): string|array
     {
-        return [
-            'type' => self::$contentType,
-            'content' => self::$content,
-        ];
+        return self::$content;
     }
 
     /**
      * Set cache header
      *
      * @param array|string $header
-     * @param string|null $value
+     * @param string|array|null $value
      * @return void
      */
-    public static function setCache(array|string $header, ?string $value = null)
+    public static function setCache(array|string $header, string|array|null $value = null)
     {
-        if (is_null($value)) {
+        if (is_array($header) && empty($value)) {
             self::$cacheHeader = $header;
-        } else {
-            self::$cacheHeader[$header] = (array)$value;
+        } elseif(is_string($header)) {
+            self::$cacheHeader[$header] = $value;
         }
     }
 
@@ -117,10 +112,10 @@ final class ResponseDepot
      * Set cookie
      *
      * @param array|string $header
-     * @param string|null $value
+     * @param string|array|null $value
      * @return void
      */
-    public static function setCookie(array|string $header, ?string $value = null)
+    public static function setCookie(array|string $header, string|array|null $value = null)
     {
         if (is_null($value)) {
             self::$cookieHeader = $header;
