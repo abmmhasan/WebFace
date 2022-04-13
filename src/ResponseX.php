@@ -18,7 +18,7 @@ use InvalidArgumentException;
  * @method Response setHeaderByGroup(array $headers) Set multiple headers at a time
  * @method Response setHeader($label, string $value = '', bool $append = true) Set Header
  */
-final class Response extends BaseResponse
+final class ResponseX extends BaseResponse
 {
     private static Response $instance;
     /**
