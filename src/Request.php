@@ -2,7 +2,7 @@
 
 namespace AbmmHasan\WebFace;
 
-use AbmmHasan\OOF\Remix\Arrject;
+use AbmmHasan\Bucket\Functional\Arrject;
 use AbmmHasan\WebFace\Base\BaseRequest;
 use BadMethodCallException;
 

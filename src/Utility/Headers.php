@@ -2,7 +2,7 @@
 
 namespace AbmmHasan\WebFace\Utility;
 
-use AbmmHasan\OOF\Remix\Arrject;
+use AbmmHasan\Bucket\Functional\Arrject;
 
 final class Headers extends Utility
 {

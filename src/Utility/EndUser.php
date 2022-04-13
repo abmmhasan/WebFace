@@ -4,7 +4,7 @@
 namespace AbmmHasan\WebFace\Utility;
 
 
-use AbmmHasan\OOF\Remix\Arrject;
+use AbmmHasan\Bucket\Functional\Arrject;
 use RuntimeException;
 
 final class EndUser extends Utility
