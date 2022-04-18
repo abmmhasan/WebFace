@@ -1,7 +1,7 @@
 #!/usr/bin/env php
 <?php
 
-use AbmmHasan\WebFace\Support\RouteDepot;
+use AbmmHasan\WebFace\Router\Asset\RouteDepot;
 
 if (php_sapi_name() !== 'cli') {
     exit;

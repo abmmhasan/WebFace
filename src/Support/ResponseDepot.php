@@ -4,26 +4,30 @@
 namespace AbmmHasan\WebFace\Support;
 
 
+use InvalidArgumentException;
+
 final class ResponseDepot
 {
-    public static int $code = 200;
     public static string $contentType = 'json';
     public static string $charset = 'UTF-8';
 
+    private static int $code = 200;
     private static array $header = [];
-    private static array $cacheHeader = [];
     private static array $cookieHeader = [];
     private static string|array $content = '';
+    private static array $cacheHeader = [
+        'Vary' => ['Accept-Encoding']
+    ];
 
     /**
      * Set header
      *
-     * @param $label
+     * @param string $label
      * @param string|null $value
      * @param bool $append
      * @return void
      */
-    public static function setHeader($label, ?string $value = null, bool $append = true)
+    public static function setHeader(string $label, ?string $value = null, bool $append = true)
     {
         $label = preg_replace('/[^a-zA-Z0-9-]/', '', $label);
         $label = ucwords($label, "-");
@@ -41,6 +45,30 @@ final class ResponseDepot
             $header[$label] = [$value];
         }
         self::$header = $header;
+    }
+
+    /**
+     * Set status code
+     *
+     * @param int $code
+     * @return void
+     */
+    public static function setStatus(int $code)
+    {
+        if (!isset(HTTPResource::$statusList[$code])) {
+            throw new InvalidArgumentException("Invalid status code {$code}!");
+        }
+        self::$code = $code;
+    }
+
+    /**
+     * Set status code
+     *
+     * @return int
+     */
+    public static function getStatus(): int
+    {
+        return self::$code;
     }
 
     /**
@@ -89,7 +117,7 @@ final class ResponseDepot
     {
         if (is_array($header) && empty($value)) {
             self::$cacheHeader = $header;
-        } elseif(is_string($header)) {
+        } elseif (is_string($header)) {
             self::$cacheHeader[$header] = $value;
         }
     }

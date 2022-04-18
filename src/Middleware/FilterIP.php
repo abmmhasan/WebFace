@@ -4,7 +4,7 @@
 namespace AbmmHasan\WebFace\Middleware;
 
 
-use AbmmHasan\WebFace\Utility\EndUser;
+use AbmmHasan\WebFace\Request\Asset\EndUser;
 
 class FilterIP
 {

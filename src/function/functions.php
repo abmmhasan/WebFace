@@ -1,11 +1,11 @@
 <?php
 
 use AbmmHasan\WebFace\Middleware\PreTag;
+use AbmmHasan\WebFace\Request\Asset\URL;
 use AbmmHasan\WebFace\Response as ResponseAlias;
-use AbmmHasan\WebFace\Support\RouteDepot;
-use AbmmHasan\WebFace\Support\Settings;
-use AbmmHasan\WebFace\Router;
-use AbmmHasan\WebFace\Utility\URL;
+use AbmmHasan\WebFace\Router\Asset\RouteDepot;
+use AbmmHasan\WebFace\Router\Asset\Settings;
+use AbmmHasan\WebFace\Router\Router;
 
 if (!function_exists('responseFlush')) {
     /**
@@ -15,6 +15,17 @@ if (!function_exists('responseFlush')) {
     function responseFlush()
     {
         (new ResponseAlias())->helloWorld();
+    }
+}
+
+if (!function_exists('response')) {
+    /**
+     * Get response instance
+     * @throws Exception
+     */
+    function response(string|array $content = null, int $status = 200, array $headers = []): ResponseAlias
+    {
+        return ResponseAlias::instance($content, $status, $headers);
     }
 }
 
@@ -55,7 +66,7 @@ if (!function_exists('webFace')) {
     {
         $router = new Router($middlewareList, $loadCache);
         if (!$router->cacheLoaded) {
-            $loadFrom = projectPath() . Settings::$resource_path;
+            $loadFrom = projectPath() . Settings::$resourcePath;
             foreach (glob($loadFrom . '*.php') as $filename) {
                 require_once($filename);
             }

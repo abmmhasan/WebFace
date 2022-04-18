@@ -1,7 +1,7 @@
 <?php
 
 
-namespace AbmmHasan\WebFace\Utility;
+namespace AbmmHasan\WebFace\Request\Asset;
 
 
 abstract class Utility

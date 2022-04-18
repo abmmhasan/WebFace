@@ -53,13 +53,13 @@ final class ResponseX extends BaseResponse
         if ($response_type === 'instance') {
             return self::$instance;
         } elseif ($response_type === 'status') {
-            (self::$instance)->setStatus($parameters[0]);
+            (self::$instance)->status($parameters[0]);
         } elseif (!in_array($response_type, (self::$instance)->applicableFormat)) {
-            throw new Exception("Unknown reponse type '$response_type' detected!");
+            throw new Exception("Unknown response type '$response_type' detected!");
         }
         (self::$instance)->_setContent($parameters[0], $response_type);
         if (isset($parameters[1])) {
-            (self::$instance)->setStatus($parameters[1]);
+            (self::$instance)->status($parameters[1]);
         }
         if (isset($parameters[2])) {
             (self::$instance)->_setHeaderByGroup((array)$parameters[2]);

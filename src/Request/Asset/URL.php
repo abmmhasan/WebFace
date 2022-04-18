@@ -1,7 +1,7 @@
 <?php
 
 
-namespace AbmmHasan\WebFace\Utility;
+namespace AbmmHasan\WebFace\Request\Asset;
 
 
 use AbmmHasan\Bucket\Functional\Arrject;
@@ -22,24 +22,24 @@ final class URL extends Utility
     public static function get(string $key = null): mixed
     {
         if (!isset(self::$url)) {
-            $host = RequestAsset::server('HTTP_HOST') ?? 'localhost';
-            $port = RequestAsset::server('SERVER_PORT');
+            $host = CommonAsset::server('HTTP_HOST') ?? 'localhost';
+            $port = CommonAsset::server('SERVER_PORT');
             if (is_null($port)) {
                 preg_match('/:[0-9]+$/m', $host, $matches);
                 if ($matches) {
                     $port = array_pop($matches);
                 }
             }
-            $request_uri = RequestAsset::server('REQUEST_URI');
+            $request_uri = CommonAsset::server('REQUEST_URI');
             $scheme = self::getScheme();
             $full_url = $scheme . $host . ':' . $port . $request_uri;
             $parts = parse_url($full_url);
-            if (is_null(RequestAsset::server('HTTP_HOST')) && is_null(RequestAsset::server('SERVER_NAME'))) {
+            if (is_null(CommonAsset::server('HTTP_HOST')) && is_null(CommonAsset::server('SERVER_NAME'))) {
                 $parts[PHP_URL_HOST] = null;
             }
             self::$url = new Arrject([
                     'url' => $full_url,
-                    'base' => $base = str_replace(['\\', ' '], ['/', '%20'], dirname(RequestAsset::server('SCRIPT_NAME'))),
+                    'base' => $base = str_replace(['\\', ' '], ['/', '%20'], dirname(CommonAsset::server('SCRIPT_NAME'))),
                     'prefix' => $scheme . $host . ':' . $port . $base,
                 ] + $parts);
         }
@@ -56,7 +56,7 @@ final class URL extends Utility
     public static function getMethod(string $key = null): mixed
     {
         if (!isset(self::$method)) {
-            $originalMethod = $requestMethod = strtoupper(RequestAsset::server('REQUEST_METHOD') ?? 'GET');
+            $originalMethod = $requestMethod = strtoupper(CommonAsset::server('REQUEST_METHOD') ?? 'GET');
             if (!in_array($requestMethod, self::$methods)) {
                 throw new Exception("Invalid method override {$requestMethod}.");
             }
@@ -66,14 +66,14 @@ final class URL extends Utility
                 $headers = Headers::all();
                 if (isset($headers['X-HTTP-Method-Override'])) {
                     $requestMethod = $headers['X-HTTP-Method-Override'];
-                } elseif (!is_null($method = RequestAsset::post('_method'))) {
+                } elseif (!is_null($method = CommonAsset::post('_method'))) {
                     $requestMethod = $method;
                 }
             }
             self::$method = new Arrject([
                 'main' => $originalMethod,
                 'converted' => strtoupper($requestMethod),
-                'isAjax' => RequestAsset::server('HTTP_X_REQUESTED_WITH') === 'XMLHttpRequest'
+                'isAjax' => CommonAsset::server('HTTP_X_REQUESTED_WITH') === 'XMLHttpRequest'
             ]);
         }
         return self::getValue(self::$method, $key);

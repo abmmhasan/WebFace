@@ -1,7 +1,7 @@
 <?php
 
 
-namespace AbmmHasan\WebFace\Utility;
+namespace AbmmHasan\WebFace\Request\Asset;
 
 
 use AbmmHasan\Bucket\Functional\Arrject;

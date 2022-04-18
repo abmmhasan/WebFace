@@ -1,10 +1,10 @@
 <?php
 
 
-namespace AbmmHasan\WebFace\Support;
+namespace AbmmHasan\WebFace\Router\Asset;
 
 
-use AbmmHasan\WebFace\Router;
+use AbmmHasan\WebFace\Router\Router;
 
 final class RouteDepot
 {
@@ -22,7 +22,7 @@ final class RouteDepot
         self::prepareRoute();
         $content = self::removeClosures(self::$route_resource);
         return file_put_contents(
-            projectPath() . Settings::$cache_path,
+            projectPath() . Settings::$cachePath,
             '<?php return ' . var_export($content, true) . ';' . PHP_EOL,
             LOCK_EX
         );
@@ -46,7 +46,7 @@ final class RouteDepot
     {
         if (!isset(self::$route_resource)) {
             $router = new Router([], false);
-            foreach (glob(projectPath() . Settings::$resource_path . '*.php') as $filename) {
+            foreach (glob(projectPath() . Settings::$resourcePath . '*.php') as $filename) {
                 require_once($filename);
             }
             self::$route_resource = $router->getRoutes();

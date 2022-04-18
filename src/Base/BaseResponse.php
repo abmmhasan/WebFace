@@ -4,11 +4,12 @@
 namespace AbmmHasan\WebFace\Base;
 
 
+use AbmmHasan\WebFace\Request\Asset\BaseRequest;
+use AbmmHasan\WebFace\Request\Asset\Headers;
+use AbmmHasan\WebFace\Request\Asset\URL;
+use AbmmHasan\WebFace\Router\Asset\Settings;
 use AbmmHasan\WebFace\Support\HTTPResource;
 use AbmmHasan\WebFace\Support\ResponseDepot;
-use AbmmHasan\WebFace\Support\Settings;
-use AbmmHasan\WebFace\Utility\Headers;
-use AbmmHasan\WebFace\Utility\URL;
 use ArrayObject;
 use Exception;
 use JsonSerializable;
@@ -58,7 +59,7 @@ abstract class BaseResponse extends BaseRequest
             return;
         }
         // Set Status Header
-        $responseCode = ResponseDepot::$code;
+        $responseCode = ResponseDepot::getStatus();
         header(
             "HTTP/" . HTTPResource::$responseVersion . " {$responseCode} " . HTTPResource::$statusList[$responseCode],
             true,
@@ -75,8 +76,8 @@ abstract class BaseResponse extends BaseRequest
 
         // Set Cookies
         if (!empty($responseCookies = ResponseDepot::getCookie())) {
-            $expire = httpDate(date(DATE_ATOM, time() + (Settings::$cookie_lifetime * 60)));
-            $isSecure = Settings::$cookie_is_secure && URL::get('scheme') === 'https';
+            $expire = httpDate(date(DATE_ATOM, time() + (Settings::$cookieLifetime * 60)));
+            $isSecure = Settings::$cookieIsSecure && URL::get('scheme') === 'https';
             foreach ($responseCookies as $name => $cookie) {
                 if (!$isSecure && $cookie['samesite'] === 'None') {
                     header_remove();
@@ -85,11 +86,11 @@ abstract class BaseResponse extends BaseRequest
                 header('Set-Cookie: ' . rawurlencode($name) . '=' . rawurlencode($cookie['value'])
                     . '; Expires=' . $expire
                     . (empty($cookie['maxage']) ? '' : '; Max-Age=' . $cookie['maxage'])
-                    . (empty(Settings::$cookie_domain) ? '' : '; Domain=' . Settings::$cookie_domain)
-                    . (empty(Settings::$cookie_path) ? '' : '; Path=' . Settings::$cookie_path)
+                    . (empty(Settings::$cookieDomain) ? '' : '; Domain=' . Settings::$cookieDomain)
+                    . (empty(Settings::$cookiePath) ? '' : '; Path=' . Settings::$cookiePath)
                     . '; SameSite=' . $cookie['samesite']
                     . (!$isSecure ? '' : '; Secure')
-                    . (!Settings::$cookie_http_only ? '' : '; HttpOnly'), false);
+                    . (!Settings::$cookieHttpOnly ? '' : '; HttpOnly'), false);
             }
         }
     }
@@ -105,7 +106,7 @@ abstract class BaseResponse extends BaseRequest
     private function notModified(): bool
     {
         $notModified = false;
-        if (ResponseDepot::$code !== 304 && URL::getMethod('converted') === 'GET') {
+        if (ResponseDepot::getStatus() !== 304 && URL::getMethod('converted') === 'GET') {
             $cacheHeaders = ResponseDepot::getCache();
             $lastModified = $cacheHeaders['Last-Modified'] ?? null;
             $modifiedSince = Headers::responseDependency('if_modified_since');
@@ -117,7 +118,7 @@ abstract class BaseResponse extends BaseRequest
                     (empty($noneMatch) || $notModified);
             }
             if ($notModified) {
-                ResponseDepot::$code = 304;
+                ResponseDepot::setStatus(304);
             }
         }
         return $notModified;
@@ -130,7 +131,7 @@ abstract class BaseResponse extends BaseRequest
      */
     private function emptyResponse(): bool
     {
-        $responseCode = ResponseDepot::$code;
+        $responseCode = ResponseDepot::getStatus();
         if (($responseCode >= 100 && $responseCode < 200) || in_array($responseCode, [204, 304])) {
             ResponseDepot::setContent('');
             ResponseDepot::setHeader('Content-Type', '', false);
@@ -209,7 +210,7 @@ abstract class BaseResponse extends BaseRequest
      */
     public function isSharedCacheable($cacheVariables): bool
     {
-        if (!in_array(ResponseDepot::$code, [200, 203, 300, 301, 302, 404, 410])) {
+        if (!in_array(ResponseDepot::getStatus(), [200, 203, 300, 301, 302, 404, 410])) {
             return false;
         }
 
@@ -225,7 +226,7 @@ abstract class BaseResponse extends BaseRequest
 
         $maxAge = $cacheVariables['control']['s-maxage'] ?? $cacheVariables['control']['max-age'] ?? null;
 
-        return (null !== $maxAge ? $maxAge : null) > 0;
+        return ($maxAge ?? null) > 0;
     }
 
     /**
@@ -271,7 +272,7 @@ abstract class BaseResponse extends BaseRequest
     {
         $cacheVariables = ResponseDepot::getCache();
         if (in_array(URL::getMethod('converted'), ['GET', 'POST']) &&
-            in_array(ResponseDepot::$code, [200, 203, 204, 206, 300, 301, 404, 405, 410, 414, 501])) {
+            in_array(ResponseDepot::getStatus(), [200, 203, 204, 206, 300, 301, 404, 405, 410, 414, 501])) {
             $control = array_values($this->computeCacheControl($cacheVariables));
             if (!empty($control)) {
                 ResponseDepot::setHeader('Cache-Control', implode(',', $control));

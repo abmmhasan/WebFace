@@ -1,11 +1,11 @@
 <?php
 
 
-namespace AbmmHasan\WebFace\Utility;
+namespace AbmmHasan\WebFace\Request\Asset;
 
 use AbmmHasan\Bucket\Functional\Arrject;
 
-final class RequestAsset extends Utility
+final class CommonAsset extends Utility
 {
     private static Arrject $query;
     private static Arrject $post;

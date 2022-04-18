@@ -8,6 +8,11 @@ final class HTTPResource
 {
     public static string $responseVersion = '1.1';
 
+    /**
+     * HTTP Status list
+     *
+     * @var array|string[]
+     */
     public static array $statusList = [
 
         // Official Response Series (defined by IANA)
@@ -86,24 +91,31 @@ final class HTTPResource
         // Custom Response Series (unofficial & project specific)
     ];
 
-    public static array $cache = [
-
+    /**
+     * Cache-Control directives
+     *
+     * @var array
+     */
+    public static array $cacheControl = [
         // Standard Control
-        'must_revalidate' => true,
-        'no_cache' => true,
-        'no_store' => true,
-        'no_transform' => true,
-        'public' => false,
-        'private' => false,
-        'proxy_revalidate' => true,
-        'max_age' => false,
-        's_maxage' => false,
+        'max-age' => false,
+        'must-revalidate' => true,
+        'private' => true,
+        'public' => true,
+        's-maxage' => false,
+        'proxy-revalidate' => true,
+        'no-cache' => true,
+        'no-store' => true,
+        'no-transform' => true,
+        'must-understand' => true,
 
         // Control with Compatibility Issue (check mdn for details)
         'immutable' => true,
-        'stale_while_revalidate' => false,
-        'stale_if_error' => false,
+        'stale-while-revalidate' => false,
+        'stale-if-error' => false,
+    ];
 
+    public static array $conditionalCache = [
         // Other Separate Directives
         'last_modified' => false,
         'vary' => false,

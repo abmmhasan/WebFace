@@ -1,6 +1,6 @@
 <?php
 
-namespace AbmmHasan\WebFace\Utility;
+namespace AbmmHasan\WebFace\Request\Asset;
 
 use AbmmHasan\Bucket\Functional\Arrject;
 
@@ -74,7 +74,7 @@ final class Headers extends Utility
     }
 
     /**
-     * Get parsed accept headers
+     * Get parsed Accept headers
      *
      * @param string|null $key
      * @return mixed

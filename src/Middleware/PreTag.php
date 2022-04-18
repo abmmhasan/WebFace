@@ -4,10 +4,10 @@
 namespace AbmmHasan\WebFace\Middleware;
 
 
-use AbmmHasan\WebFace\Support\Settings;
-use AbmmHasan\WebFace\Support\RouteDepot;
-use AbmmHasan\WebFace\Utility\Headers;
-use AbmmHasan\WebFace\Utility\URL;
+use AbmmHasan\WebFace\Request\Asset\Headers;
+use AbmmHasan\WebFace\Request\Asset\URL;
+use AbmmHasan\WebFace\Router\Asset\RouteDepot;
+use AbmmHasan\WebFace\Router\Asset\Settings;
 use Exception;
 
 class PreTag
@@ -34,14 +34,14 @@ class PreTag
      */
     public function set($path, $tag): bool|int
     {
-        if (empty(Settings::$pre_tag_file_location)) {
+        if (empty(Settings::$preTagFileLocation)) {
             throw new Exception("PreTag file location not defined!");
         }
         $this->loadAsset();
         $this->setByPath($path, $tag);
         if (!empty($this->asset)) {
             return file_put_contents(
-                projectPath() . Settings::$pre_tag_file_location,
+                projectPath() . Settings::$preTagFileLocation,
                 json_encode($this->asset), LOCK_EX
             );
         }
@@ -53,7 +53,7 @@ class PreTag
      */
     private function loadAsset()
     {
-        if (!empty(Settings::$pre_tag_file_location) && file_exists($path = projectPath() . Settings::$pre_tag_file_location)) {
+        if (!empty(Settings::$preTagFileLocation) && file_exists($path = projectPath() . Settings::$preTagFileLocation)) {
             $this->asset = json_decode(file_get_contents($path), true);
         }
     }

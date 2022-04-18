@@ -1,14 +1,15 @@
 <?php
 
 
-namespace AbmmHasan\WebFace\Base;
+namespace AbmmHasan\WebFace\Router\Asset;
 
 
-use AbmmHasan\OOF\DI\Container;
+use AbmmHasan\WebFace\Request\Asset\URL;
 use AbmmHasan\WebFace\Support\ResponseDepot;
-use AbmmHasan\WebFace\Support\Settings;
-use AbmmHasan\WebFace\Support\RouteDepot;
-use AbmmHasan\WebFace\Utility\URL;
+use Exception;
+use ReflectionException;
+use function container;
+use function projectPath;
 
 abstract class BaseRoute
 {
@@ -27,7 +28,7 @@ abstract class BaseRoute
         'OPTIONS',
         'PATCH',
         'ANY',
-        'AJAX',
+        'XGET',
         'XPOST',
         'XPUT',
         'XDELETE',
@@ -35,6 +36,14 @@ abstract class BaseRoute
         'VIEW'
     ];
     public bool $cacheLoaded = false;
+    protected array $pattern = [
+        ':num' => '(-?[0-9]+)',
+        ':alpha' => '([a-zA-Z]+)',
+        ':alphanum' => '([a-zA-Z0-9]+)',
+        ':any' => '([a-zA-Z0-9\.\-_%= \+\@\(\)]+)',
+        ':all' => '(.*)',
+    ];
+    private array $keyMatch = [];
 
     /**
      * Base Route Constructor
@@ -68,7 +77,7 @@ abstract class BaseRoute
      */
     protected function loadCache(): bool
     {
-        $cachePath = projectPath() . Settings::$cache_path;
+        $cachePath = projectPath() . Settings::$cachePath;
         if (file_exists($cachePath)) {
             $this->routes = require($cachePath);
             return true;
@@ -79,10 +88,10 @@ abstract class BaseRoute
     /**
      * Prepare route pattern (for further process)
      *
-     * @param $route
+     * @param string $route
      * @return string
      */
-    protected function preparePattern($route): string
+    protected function preparePattern(string $route): string
     {
         $route = array_filter(explode('/', trim($route)));
         $route = array_merge($this->baseRoute, $route);
@@ -93,11 +102,11 @@ abstract class BaseRoute
      * Prepare route asset (for further process)
      *
      * @param array $methods
-     * @param $pattern
-     * @param $callback
-     * @param $routeResource
+     * @param string $pattern
+     * @param array|callable $callback
+     * @param array $routeResource
      */
-    protected function buildRoute(array $methods, $pattern, $callback, &$routeResource)
+    protected function buildRoute(array $methods, string $pattern, array|callable $callback, array &$routeResource)
     {
         $routeInfo = [
             'before' => $this->middleware['before'] ?? [],
@@ -106,14 +115,13 @@ abstract class BaseRoute
         ];
         if (is_array($callback)) {
             if (!empty($callback['middleware']) || !empty($callback['before'])) {
-                $before = array_merge(
-                    $routeInfo['before'],
-                    array_unique($callback['before'] ?? $callback['middleware'])
-                );
+                $before = array_unique(array_merge(
+                    $routeInfo['before'], $callback['before'] ?? $callback['middleware']
+                ));
                 $routeInfo['before'] = $this->filterMiddlewareTag($before);
             }
             if (!empty($callback['after'])) {
-                $after = array_merge($routeInfo['after'], array_unique($callback['after']));
+                $after = array_unique(array_merge($routeInfo['after'], $callback['after']));
                 $routeInfo['after'] = $this->filterMiddlewareTag($after);
             }
             if (!empty($callback['name'])) {
@@ -151,16 +159,14 @@ abstract class BaseRoute
             $this->baseRoute = array_filter(array_merge($this->baseRoute, $this->prefix));
         }
         if (!empty($settings['middleware']) || !empty($settings['before'])) {
-            $this->middleware['before'] = array_merge(
-                $this->middleware['before'] ?? [],
-                array_unique($settings['before'] ?? $settings['middleware'])
-            );
+            $this->middleware['before'] = array_unique(array_merge(
+                $this->middleware['before'] ?? [], $settings['before'] ?? $settings['middleware']
+            ));
         }
         if (!empty($settings['after'])) {
-            $this->middleware['after'] = array_merge(
-                $this->middleware['after'] ?? [],
-                array_unique($settings['after'])
-            );
+            $this->middleware['after'] = array_unique(array_merge(
+                $this->middleware['after'] ?? [], $settings['after']
+            ));
         }
         if (!empty($settings['name'])) {
             $nameFix = explode('.', $settings['name']);
@@ -176,6 +182,7 @@ abstract class BaseRoute
      *
      * @param $resource
      * @return void
+     * @throws ReflectionException
      */
     protected function runMiddleware($resource)
     {
@@ -192,6 +199,7 @@ abstract class BaseRoute
      * @param $routes
      * @param $method
      * @return bool
+     * @throws ReflectionException
      */
     protected function handle($routes, $method): bool
     {
@@ -209,44 +217,53 @@ abstract class BaseRoute
         }
         // pattern match
         foreach ($routes as $storedPattern => $route) {
-            if (str_contains($storedPattern, '{')) {
-                $pattern = preg_replace('/\/{(.*?)}/', '/(.*?)', $storedPattern);
-                if (preg_match_all('#^' . $pattern . '$#', $uri, $matches, PREG_SET_ORDER)) {
-                    RouteDepot::setCurrentRoute($method . ' ' . $storedPattern);
-                    if (!$this->routeMiddlewareCheck($route['before'] ?? [], $this->globalMiddleware['route'])) {
-                        return true;
-                    }
-                    preg_match_all('#^' . $pattern . '$#', $storedPattern, $patternKeys, PREG_SET_ORDER);
-                    unset($patternKeys[0][0], $matches[0][0]);
-                    $this->invoke($route['fn'], array_combine(
-                        array_map(function ($value) {
-                            return trim($value, "{}");
-                        }, $patternKeys[0]),
-                        $matches[0]
-                    ));
-                    $this->runMiddleware($route['after'] ?? []);
+            if (!str_contains($storedPattern, '{')) {
+                continue;
+            }
+            if (preg_match_all('#^' .
+                preg_replace_callback('/{(.*?)(:.*?)?}/', [$this, 'prepareMatch'], $storedPattern) .
+                '$#u', $uri, $matches, PREG_SET_ORDER)) {
+                RouteDepot::setCurrentRoute($method . ' ' . $storedPattern);
+                if (!$this->routeMiddlewareCheck($route['before'] ?? [], $this->globalMiddleware['route'])) {
                     return true;
                 }
+                unset($matches[0][0]);
+                $this->invoke($route['fn'], array_combine($this->keyMatch, $matches[0]));
+                $this->runMiddleware($route['after'] ?? []);
+                return true;
             }
+            $this->keyMatch = [];
         }
         return false;
     }
 
     /**
+     * Return matched pattern according to given identifier
+     *
+     * @param array $matches
+     * @return string
+     */
+    private function prepareMatch(array $matches): mixed
+    {
+        $this->keyMatch[] = $matches[1];
+        return $this->pattern[$matches[2] ?? ':all'] ?? $this->pattern[':all'];
+    }
+
+    /**
      * Middleware tag filter (add/remove middleware based on given condition)
      *
-     * @param $array
+     * @param array $array
      * @return array
      */
-    private function filterMiddlewareTag($array): array
+    private function filterMiddlewareTag(array $array): array
     {
         $result = [];
         if (!empty($array)) {
             foreach ($array as $item) {
                 if (!empty($item) &&
+                    !str_starts_with($item, '!') &&
                     !in_array($item, $result) &&
-                    !in_array("!{$item}", $array) &&
-                    !str_starts_with($item, '!')) {
+                    !in_array("!$item", $array)) {
                     $result[] = $item;
                 }
             }
@@ -257,29 +274,30 @@ abstract class BaseRoute
     /**
      * Checks route middleware for generating permission
      *
-     * @param $check
-     * @param $collection
+     * @param array $check
+     * @param array $collection
      * @return bool
+     * @throws ReflectionException
+     * @throws Exception
      */
-    private function routeMiddlewareCheck($check, $collection): bool
+    private function routeMiddlewareCheck(array $check, array $collection): bool
     {
         if (empty($check) || empty($collection)) {
             return true;
         }
-        if (is_array($collection) && count($collection)) {
-            foreach ($check as $middleware) {
-                $parameterSeparation = explode(':', $middleware, 2);
-                if (isset($collection[$parameterSeparation[0]])) {
-                    $eligible = $this->invokeMiddleware($collection[$parameterSeparation[0]], $parameterSeparation[1] ?? '');
-                    if ($eligible !== true) {
-                        ResponseDepot::$code = $eligible['status'] ?? 403;
-                        ResponseDepot::setContent([
-                            'status' => 'failed',
-                            'message' => $eligible['message'] ?? (is_string($eligible) ? $eligible : 'Bad Request')
-                        ]);
-                        return false;
-                    }
-                }
+        foreach ($check as $middleware) {
+            $parameterSeparation = explode(':', $middleware, 2);
+            if (!isset($collection[$parameterSeparation[0]])) {
+                throw new Exception("Unknown middleware alias: '$parameterSeparation[0]'");
+            }
+            $eligible = $this->invokeMiddleware($collection[$parameterSeparation[0]], $parameterSeparation[1] ?? '');
+            if ($eligible !== true) {
+                ResponseDepot::setStatus($eligible['status'] ?? 403);
+                ResponseDepot::setContent([
+                    'status' => 'failed',
+                    'message' => $eligible['message'] ?? (is_string($eligible) ? $eligible : 'Bad Request')
+                ]);
+                return false;
             }
         }
         return true;
@@ -290,16 +308,17 @@ abstract class BaseRoute
      *
      * @param $fn
      * @param array $params
+     * @throws ReflectionException
      */
     private function invoke($fn, array $params = [])
     {
         ob_start();
         if ($fn instanceof \Closure) {
-            Container::registerClosure('1', $fn, $params)
+            container()->registerClosure('1', $fn, $params)
                 ->callClosure('1');
         } elseif (is_array($fn)) {
             [$controller, $method] = $fn;
-            Container::registerMethod($controller, $method, $params)
+            container()->registerMethod($controller, $method, $params)
                 ->callMethod($controller);
         }
         ob_end_clean();
@@ -311,15 +330,16 @@ abstract class BaseRoute
      * @param $fn
      * @param string $params
      * @return mixed|void
+     * @throws ReflectionException
      */
     private function invokeMiddleware($fn, string $params = '')
     {
         $params = array_filter(explode(',', $params));
         if ($fn instanceof \Closure) {
-            return Container::registerClosure('1', $fn, $params)
-                ->callClosure('1');
+            return container()->registerClosure('wf', $fn, $params)
+                ->callClosure('wf');
         }
-        return Container::registerMethod($fn, Settings::$middleware_call_on_method, $params)
+        return container()->registerMethod($fn, Settings::$middlewareCallMethod, $params)
             ->callMethod($fn);
     }
 }

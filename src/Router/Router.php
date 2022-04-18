@@ -1,13 +1,15 @@
 <?php
 
-namespace AbmmHasan\WebFace;
+namespace AbmmHasan\WebFace\Router;
 
-use AbmmHasan\WebFace\Base\BaseRoute;
+use AbmmHasan\WebFace\Request\Asset\URL;
+use AbmmHasan\WebFace\Router\Asset\BaseRoute;
+use AbmmHasan\WebFace\Router\Asset\Settings;
 use AbmmHasan\WebFace\Support\ResponseDepot;
-use AbmmHasan\WebFace\Support\Settings;
-use AbmmHasan\WebFace\Utility\URL;
 use BadMethodCallException;
 use Exception;
+use ReflectionException;
+use function responseFlush;
 
 /**
  * Class Router.
@@ -23,9 +25,9 @@ final class Router extends BaseRoute
     public function __construct(array $middleware = [], bool $loadCache = true)
     {
         parent::__construct();
-        $this->serverBasePath = empty(Settings::$base_path) ? URL::get('base') : Settings::$base_path;
+        $this->serverBasePath = Settings::$basePath ?? URL::get('base');
         $this->globalMiddleware = $middleware;
-        if ($loadCache && Settings::$cache_load && !empty(Settings::$cache_path)) {
+        if ($loadCache && Settings::$cacheLoad && !empty(Settings::$cachePath)) {
             $this->cacheLoaded = $this->loadCache();
         }
     }
@@ -52,22 +54,26 @@ final class Router extends BaseRoute
      * Add route
      *
      * @param array $methods
-     * @param $route
-     * @param $callback
+     * @param string $route
+     * @param array|callable $callback
      * @return bool|void
      */
-    public function match(array $methods, $route, $callback)
+    public function match(array $methods, string $route, array|callable $callback)
     {
         if ($this->cacheLoaded) {
             return true;
         }
         foreach ($methods as $method) {
             if (!in_array(strtoupper($method), $this->validMethods)) {
-                throw new BadMethodCallException("Invalid method {$method}.");
+                throw new BadMethodCallException("Invalid method $method.");
             }
         }
-        $pattern = $this->preparePattern($route);
-        $this->buildRoute($methods, $pattern, $callback, $this->routes);
+        $this->buildRoute(
+            $methods,
+            $this->preparePattern($route),
+            $callback,
+            $this->routes
+        );
     }
 
     /**
@@ -102,43 +108,36 @@ final class Router extends BaseRoute
     /**
      * Run router
      *
-     * @param bool $flash
      * @return bool|int
-     * @throws Exception
+     * @throws Exception|ReflectionException
      */
-    public function run(bool $flash = true): bool|int
+    public function run(): bool|int
     {
         if (php_sapi_name() === 'cli') {
             return true;
         }
         $this->runMiddleware($this->globalMiddleware['before'] ?? []);
         // Handle all routes
-        $numHandled = 0;
+        $numHandled = false;
         $method = URL::getMethod('converted');
-        if (URL::getMethod('isAjax')) {
-            if ($method === 'GET' && isset($this->routes["AJAX"])) {
-                $numHandled = $this->handle($this->routes["AJAX"], 'AJAX');
-            } elseif (isset($this->routes["X" . $method])) {
-                $numHandled = $this->handle($this->routes["X" . $method], "X" . $method);
-            }
-        } else {
+        if (!URL::getMethod('isAjax')) {
             if (isset($this->routes[$method])) {
                 $numHandled = $this->handle($this->routes[$method], $method);
             }
             if (!$numHandled && isset($this->routes["ANY"])) {
                 $numHandled = $this->handle($this->routes["ANY"], 'ANY');
             }
+        } elseif (isset($this->routes["X" . $method])) {
+            $numHandled = $this->handle($this->routes["X" . $method], "X" . $method);
         }
 
         // If no route was handled, trigger the 404 (if any)
         if (!$numHandled) {
-            ResponseDepot::$code = 404;
+            ResponseDepot::setStatus(404);
         }
         $this->runMiddleware($this->globalMiddleware['after'] ?? []);
-        if ($flash) {
-            responseFlush();
-        }
-        return ResponseDepot::$code;
+        responseFlush();
+        return ResponseDepot::getStatus();
     }
 
     /**

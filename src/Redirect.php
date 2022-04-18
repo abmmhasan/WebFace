@@ -5,8 +5,8 @@ namespace AbmmHasan\WebFace;
 
 
 use AbmmHasan\WebFace\Base\BaseResponse;
+use AbmmHasan\WebFace\Request\Asset\URL;
 use AbmmHasan\WebFace\Support\ResponseDepot;
-use AbmmHasan\WebFace\Utility\URL;
 use Exception;
 
 /**
@@ -72,7 +72,7 @@ final class Redirect extends BaseResponse
                 ResponseDepot::setHeader($name, $value, false);
             }
         }
-        ResponseDepot::$code = $available[$response_type];
+        ResponseDepot::setStatus($available[$response_type]);
         ResponseDepot::setHeader('Location', $parameters[0], false);
         (new self)->helloWorld();
     }
