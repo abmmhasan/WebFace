@@ -21,7 +21,8 @@ final class Headers extends Utility
     {
         if (!isset(self::$headers)) {
             $headerVar = [];
-            foreach ($_SERVER as $item => $value) {
+            $server = CommonAsset::server();
+            foreach ($server as $item => $value) {
                 if (str_starts_with($item, 'HTTP_')) {
                     $item = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($item, 5)))));
                     $headerVar[$item] = $value;
@@ -31,15 +32,15 @@ final class Headers extends Utility
                 }
             }
 
-            if (isset($_SERVER['PHP_AUTH_USER'])) {
-                $headerVar['PHP_AUTH_USER'] = $_SERVER['PHP_AUTH_USER'];
-                $headerVar['PHP_AUTH_PW'] = $_SERVER['PHP_AUTH_PW'] ?? '';
+            if (isset($server['PHP_AUTH_USER'])) {
+                $headerVar['PHP_AUTH_USER'] = $server['PHP_AUTH_USER'];
+                $headerVar['PHP_AUTH_PW'] = $server['PHP_AUTH_PW'] ?? '';
             } else {
                 $authorizationHeader = null;
-                if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
-                    $authorizationHeader = $_SERVER['HTTP_AUTHORIZATION'];
-                } elseif (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
-                    $authorizationHeader = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+                if (isset($server['HTTP_AUTHORIZATION'])) {
+                    $authorizationHeader = $server['HTTP_AUTHORIZATION'];
+                } elseif (isset($server['REDIRECT_HTTP_AUTHORIZATION'])) {
+                    $authorizationHeader = $server['REDIRECT_HTTP_AUTHORIZATION'];
                 }
 
                 if (null !== $authorizationHeader) {
@@ -49,10 +50,10 @@ final class Headers extends Utility
                         if (2 == count($exploded)) {
                             list($headerVar['PHP_AUTH_USER'], $headerVar['PHP_AUTH_PW']) = $exploded;
                         }
-                    } elseif (empty($_SERVER['PHP_AUTH_DIGEST']) && (0 === stripos($authorizationHeader, 'digest '))) {
+                    } elseif (empty($server['PHP_AUTH_DIGEST']) && (0 === stripos($authorizationHeader, 'digest '))) {
                         // In some circumstances PHP_AUTH_DIGEST needs to be set
                         $headerVar['PHP_AUTH_DIGEST'] = $authorizationHeader;
-                        $_SERVER['PHP_AUTH_DIGEST'] = $authorizationHeader;
+                        $server['PHP_AUTH_DIGEST'] = $authorizationHeader;
                     } elseif (0 === stripos($authorizationHeader, 'bearer ')) {
                         $headerVar['Authorization'] = $authorizationHeader;
                     }

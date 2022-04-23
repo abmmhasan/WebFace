@@ -88,5 +88,5 @@ final class Settings
      *
      * @var string
      */
-    public static string $cookie_same_site = '';
+    public static string $cookieSameSite = '';
 }

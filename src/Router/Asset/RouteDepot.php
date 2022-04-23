@@ -5,24 +5,28 @@ namespace AbmmHasan\WebFace\Router\Asset;
 
 
 use AbmmHasan\WebFace\Router\Router;
+use Closure;
+use Laravel\SerializableClosure\Exceptions\PhpVersionNotSupportedException;
+use Laravel\SerializableClosure\SerializableClosure;
 
 final class RouteDepot
 {
-    private static string $route_in_operation = '/';
-    private static mixed $route_resource;
-    public static array $cached_route_resource;
+    private static string $routeInOperation = '/';
+    private static mixed $routeResource;
+    private static array $cachedRouteResource;
 
     /**
      * Prepare and cache route
      *
      * @return bool|int
+     * @throws PhpVersionNotSupportedException
      */
     public static function cache(): bool|int
     {
         self::prepareRoute();
-        $content = self::removeClosures(self::$route_resource);
+        $content = self::parseResource(self::$routeResource);
         return file_put_contents(
-            projectPath() . Settings::$cachePath,
+            Settings::$cachePath,
             '<?php return ' . var_export($content, true) . ';' . PHP_EOL,
             LOCK_EX
         );
@@ -36,20 +40,30 @@ final class RouteDepot
      */
     public static function getResource($key): mixed
     {
-        return self::$cached_route_resource[$key] ?? null;
+        return self::$cachedRouteResource[$key] ?? null;
+    }
+
+    /**
+     * Get route resource
+     *
+     * @param array $resource
+     */
+    public static function setResource(array $resource): void
+    {
+        self::$cachedRouteResource = $resource;
     }
 
     /**
      * Prepare route resources
      */
-    private static function prepareRoute()
+    private static function prepareRoute(): void
     {
-        if (!isset(self::$route_resource)) {
-            $router = new Router([], false);
-            foreach (glob(projectPath() . Settings::$resourcePath . '*.php') as $filename) {
+        if (!isset(self::$routeResource)) {
+            $router = new Router();
+            foreach (glob(Settings::$resourcePath . '*.php') as $filename) {
                 require_once($filename);
             }
-            self::$route_resource = $router->getRoutes();
+            self::$routeResource = $router->getRoutes();
         }
     }
 
@@ -58,9 +72,9 @@ final class RouteDepot
      *
      * @param string|null $route
      */
-    public static function setCurrentRoute(string $route = null)
+    public static function setCurrentRoute(string $route = null): void
     {
-        self::$route_in_operation = $route;
+        self::$routeInOperation = $route;
     }
 
     /**
@@ -70,7 +84,7 @@ final class RouteDepot
      */
     public static function getCurrentRoute(): string
     {
-        return self::$route_in_operation;
+        return self::$routeInOperation;
     }
 
     /**
@@ -78,8 +92,9 @@ final class RouteDepot
      *
      * @param $content
      * @return array
+     * @throws PhpVersionNotSupportedException
      */
-    private static function removeClosures($content): array
+    private static function parseResource($content): array
     {
         $filtered = [];
         foreach ($content as $method => $routeList) {
@@ -88,7 +103,10 @@ final class RouteDepot
                 continue;
             }
             foreach ($routeList as $pattern => $route) {
-                if (is_string($route['fn'])) {
+                if ($route['fn'] instanceof Closure) {
+                    $route['fn'] = serialize(new SerializableClosure($route['fn']));
+                    $filtered[$method][$pattern] = $route;
+                } elseif (is_string($route['fn'])) {
                     $filtered[$method][$pattern] = $route;
                 }
             }

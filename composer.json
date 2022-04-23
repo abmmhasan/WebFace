@@ -29,6 +29,7 @@
     "php": ">=8.0",
     "ext-json": "*",
     "abmmhasan/oof": "dev-main",
-    "abmmhasan/bucket": "dev-main"
+    "abmmhasan/bucket": "dev-main",
+    "laravel/serializable-closure": "^1.1"
   }
 }

@@ -8,18 +8,19 @@ use AbmmHasan\WebFace\Request\Asset\URL;
 use AbmmHasan\WebFace\Support\ResponseDepot;
 use Exception;
 use ReflectionException;
-use function container;
 use function projectPath;
 
 abstract class BaseRoute
 {
     protected array $routes = [];
+
     protected array $baseRoute = [];
-    protected string $serverBasePath;
-    protected $name;
-    protected $prefix;
+    protected string $name = '';
+    protected array $prefix = [];
     protected array $middleware = [];
+
     protected array $globalMiddleware = [];
+
     protected array $validMethods = [
         'GET',
         'POST',
@@ -50,24 +51,7 @@ abstract class BaseRoute
      */
     public function __construct()
     {
-        $this->loadJsonSettings();
-    }
-
-    /**
-     * Load Settings from json file
-     *
-     * @return void
-     */
-    private function loadJsonSettings()
-    {
-        if (file_exists($file = projectPath() . 'webface.json')) {
-            $json = json_decode(file_get_contents($file));
-            if (!empty($json)) {
-                foreach ($json as $item => $value) {
-                    Settings::$$item = $value;
-                }
-            }
-        }
+        Settings::$basePath = URL::get('base');
     }
 
     /**
@@ -143,7 +127,7 @@ abstract class BaseRoute
         foreach ($methods as $method) {
             $routeResource['named'][$routeInfo['name']] ??= [$method, $pattern];
             $routeResource['list'][] = $pattern;
-            $routeResource[strtoupper($method)][$pattern] = $routeInfo;
+            $routeResource[$method][$pattern] = $routeInfo;
         }
     }
 
@@ -178,22 +162,6 @@ abstract class BaseRoute
     }
 
     /**
-     * Execute middlewares
-     *
-     * @param $resource
-     * @return void
-     * @throws ReflectionException
-     */
-    protected function runMiddleware($resource)
-    {
-        if (!empty($resource)) {
-            foreach ($resource as $execute) {
-                $this->invokeMiddleware($execute);
-            }
-        }
-    }
-
-    /**
      * Find and execute exact route
      *
      * @param $routes
@@ -204,15 +172,15 @@ abstract class BaseRoute
     protected function handle($routes, $method): bool
     {
         // Current Relative URL: remove rewrite base path from it (allows running the router in a subdirectory)
-        $uri = '/' . trim(substr(URL::get('path'), strlen($this->serverBasePath)), '/');
+        $uri = '/' . trim(substr(URL::get('path'), strlen(Settings::$basePath)), '/');
         // absolute match
         if (isset($routes[$uri])) {
             RouteDepot::setCurrentRoute($method . ' ' . $uri);
             if (!$this->routeMiddlewareCheck($routes[$uri]['before'] ?? [], $this->globalMiddleware['route'])) {
                 return true;
             }
-            $this->invoke($routes[$uri]['fn']);
-            $this->runMiddleware($routes[$uri]['after'] ?? []);
+            Invoke::method($routes[$uri]['fn']);
+            Invoke::middlewareGroup($routes[$uri]['after'] ?? []);
             return true;
         }
         // pattern match
@@ -228,8 +196,8 @@ abstract class BaseRoute
                     return true;
                 }
                 unset($matches[0][0]);
-                $this->invoke($route['fn'], array_combine($this->keyMatch, $matches[0]));
-                $this->runMiddleware($route['after'] ?? []);
+                Invoke::method($route['fn'], array_combine($this->keyMatch, $matches[0]));
+                Invoke::middlewareGroup($route['after'] ?? []);
                 return true;
             }
             $this->keyMatch = [];
@@ -290,7 +258,7 @@ abstract class BaseRoute
             if (!isset($collection[$parameterSeparation[0]])) {
                 throw new Exception("Unknown middleware alias: '$parameterSeparation[0]'");
             }
-            $eligible = $this->invokeMiddleware($collection[$parameterSeparation[0]], $parameterSeparation[1] ?? '');
+            $eligible = Invoke::middleware($collection[$parameterSeparation[0]], $parameterSeparation[1] ?? '');
             if ($eligible !== true) {
                 ResponseDepot::setStatus($eligible['status'] ?? 403);
                 ResponseDepot::setContent([
@@ -301,45 +269,5 @@ abstract class BaseRoute
             }
         }
         return true;
-    }
-
-    /**
-     * Invoke method
-     *
-     * @param $fn
-     * @param array $params
-     * @throws ReflectionException
-     */
-    private function invoke($fn, array $params = [])
-    {
-        ob_start();
-        if ($fn instanceof \Closure) {
-            container()->registerClosure('1', $fn, $params)
-                ->callClosure('1');
-        } elseif (is_array($fn)) {
-            [$controller, $method] = $fn;
-            container()->registerMethod($controller, $method, $params)
-                ->callMethod($controller);
-        }
-        ob_end_clean();
-    }
-
-    /**
-     * Invoke middleware
-     *
-     * @param $fn
-     * @param string $params
-     * @return mixed|void
-     * @throws ReflectionException
-     */
-    private function invokeMiddleware($fn, string $params = '')
-    {
-        $params = array_filter(explode(',', $params));
-        if ($fn instanceof \Closure) {
-            return container()->registerClosure('wf', $fn, $params)
-                ->callClosure('wf');
-        }
-        return container()->registerMethod($fn, Settings::$middlewareCallMethod, $params)
-            ->callMethod($fn);
     }
 }

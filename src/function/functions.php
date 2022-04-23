@@ -58,21 +58,21 @@ if (!function_exists('webFace')) {
     /**
      * Initiate router
      *
-     * @param array $middlewareList
-     * @param bool $loadCache
+     * @param array $settings
+     * @return Router
      * @throws Exception
      */
-    function webFace(array $middlewareList = [], bool $loadCache = true)
+    function webFace(array $settings): Router
     {
-        $router = new Router($middlewareList, $loadCache);
+        $router = new Router();
+        $router->setOptions($settings);
         if (!$router->cacheLoaded) {
-            $loadFrom = projectPath() . Settings::$resourcePath;
-            foreach (glob($loadFrom . '*.php') as $filename) {
+            foreach (glob(Settings::$resourcePath . '*.php') as $filename) {
                 require_once($filename);
             }
         }
-        RouteDepot::$cached_route_resource = $router->getRoutes();
-        $router->run();
+        RouteDepot::setResource($router->getRoutes());
+        return $router;
     }
 }
 

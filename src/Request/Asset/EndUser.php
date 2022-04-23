@@ -23,11 +23,11 @@ final class EndUser extends Utility
     {
         if (!isset(self::$info)) {
             self::$info = new Arrject([
-                'ip' => $_SERVER['REMOTE_ADDR'] ?? null,
+                'ip' => CommonAsset::server('REMOTE_ADDR'),
                 'proxy_ip' => self::ip(),
-                'referer' => $_SERVER['HTTP_REFERER'] ?? null,
+                'referer' => CommonAsset::server('HTTP_REFERER'),
                 'ua' => [
-                    'agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
+                    'agent' => CommonAsset::server('HTTP_USER_AGENT'),
                     'system' => self::userAgentInfo(),
                 ]
             ]);
@@ -65,8 +65,8 @@ final class EndUser extends Utility
                 'REMOTE_ADDR'
             ] as $key
         ) {
-            if (isset($_SERVER[$key]) === true) {
-                foreach (explode(',', $_SERVER[$key]) as $ip) {
+            if (($ipAsset = CommonAsset::server($key)) !== null) {
+                foreach (explode(',', $ipAsset) as $ip) {
                     $ip = trim($ip);
                     if (filter_var(
                             $ip,

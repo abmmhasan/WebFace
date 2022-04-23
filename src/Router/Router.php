@@ -4,9 +4,11 @@ namespace AbmmHasan\WebFace\Router;
 
 use AbmmHasan\WebFace\Request\Asset\URL;
 use AbmmHasan\WebFace\Router\Asset\BaseRoute;
+use AbmmHasan\WebFace\Router\Asset\Invoke;
 use AbmmHasan\WebFace\Router\Asset\Settings;
 use AbmmHasan\WebFace\Support\ResponseDepot;
 use BadMethodCallException;
+use Error;
 use Exception;
 use ReflectionException;
 use function responseFlush;
@@ -19,17 +21,68 @@ final class Router extends BaseRoute
     /**
      * Router constructor.
      *
-     * @param array $middleware
-     * @param bool $loadCache
      */
-    public function __construct(array $middleware = [], bool $loadCache = true)
+    public function __construct()
     {
         parent::__construct();
-        $this->serverBasePath = Settings::$basePath ?? URL::get('base');
-        $this->globalMiddleware = $middleware;
-        if ($loadCache && Settings::$cacheLoad && !empty(Settings::$cachePath)) {
+        if (Settings::$cacheLoad && !empty(Settings::$cachePath)) {
             $this->cacheLoaded = $this->loadCache();
         }
+    }
+
+    /**
+     * Set middleware classes
+     *
+     * @param array $route on-route & per-route; alias => class
+     * @param array $before list of class executed before route execution
+     * @param array $after list of class executed after route execution
+     * @return $this
+     */
+    public function setMiddleware(array $route = [], array $before = [], array $after = []): Router
+    {
+        $this->globalMiddleware = [
+            'before' => $before,
+            'route' => $route,
+            'after' => $after,
+        ];
+        return $this;
+    }
+
+    /**
+     * Set options for route
+     *
+     * @param array $options
+     * @return $this
+     * @throws Exception
+     */
+    public function setOptions(array $options): Router
+    {
+        try {
+            foreach ($options as $property => $value) {
+                Settings::$$property = $value;
+            }
+            return $this;
+        } catch (Error $e) {
+            throw new Exception("'$property': Invalid settings or Type mismatch");
+        }
+    }
+
+    /**
+     * Set route pattern validation regex
+     *
+     * @param string $alias Alias (used in router)
+     * @param string $regex regex to be validated with
+     * @return $this
+     * @throws Exception
+     */
+    public function setValidationRegex(string $alias, string $regex): Router
+    {
+        $alias = ':' . trim($alias);
+        if (isset($this->pattern[$alias])) {
+            throw new Exception('You can\'t override an existing rule!');
+        }
+        $this->pattern[$alias] = '(' . trim($regex, ' ()') . ')';
+        return $this;
     }
 
     /**
@@ -47,7 +100,7 @@ final class Router extends BaseRoute
         if (empty($params) || count($params) !== 2) {
             return false;
         }
-        $this->match([$method], $params[0], $params[1]);
+        $this->match([strtoupper($method)], $params[0], $params[1]);
     }
 
     /**
@@ -63,10 +116,8 @@ final class Router extends BaseRoute
         if ($this->cacheLoaded) {
             return true;
         }
-        foreach ($methods as $method) {
-            if (!in_array(strtoupper($method), $this->validMethods)) {
-                throw new BadMethodCallException("Invalid method $method.");
-            }
+        if ($diff = array_diff($methods, $this->validMethods)) {
+            throw new BadMethodCallException('Invalid method ' . implode(', ', $diff));
         }
         $this->buildRoute(
             $methods,
@@ -116,7 +167,7 @@ final class Router extends BaseRoute
         if (php_sapi_name() === 'cli') {
             return true;
         }
-        $this->runMiddleware($this->globalMiddleware['before'] ?? []);
+        Invoke::middlewareGroup($this->globalMiddleware['before'] ?? []);
         // Handle all routes
         $numHandled = false;
         $method = URL::getMethod('converted');
@@ -135,7 +186,7 @@ final class Router extends BaseRoute
         if (!$numHandled) {
             ResponseDepot::setStatus(404);
         }
-        $this->runMiddleware($this->globalMiddleware['after'] ?? []);
+        Invoke::middlewareGroup($this->globalMiddleware['after'] ?? []);
         responseFlush();
         return ResponseDepot::getStatus();
     }
