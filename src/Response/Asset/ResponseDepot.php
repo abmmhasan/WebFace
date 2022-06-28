@@ -1,7 +1,7 @@
 <?php
 
 
-namespace AbmmHasan\WebFace\Support;
+namespace AbmmHasan\WebFace\Response\Asset;
 
 
 use InvalidArgumentException;
@@ -17,6 +17,12 @@ final class ResponseDepot
     private static string|array $content = '';
     private static array $cacheHeader = [
         'Vary' => ['Accept-Encoding']
+    ];
+
+    public static array $applicableFormat = [
+        'html' => 'text/html',
+        'json' => 'application/json',
+        'file' => null
     ];
 
     /**
@@ -82,7 +88,7 @@ final class ResponseDepot
         if (is_null($label)) {
             return self::$header;
         }
-        return self::$header[$label] ?? '';
+        return self::$header[$label] ?? null;
     }
 
     /**
@@ -139,17 +145,14 @@ final class ResponseDepot
     /**
      * Set cookie
      *
-     * @param array|string $header
-     * @param string|array|null $value
+     * @param array|string $label
+     * @param string $value
+     * @param array|null $options
      * @return void
      */
-    public static function setCookie(array|string $header, string|array|null $value = null)
+    public static function setCookie(array|string $label, string $value, array $options = null): void
     {
-        if (is_null($value)) {
-            self::$cookieHeader = $header;
-        } else {
-            self::$cookieHeader[$header] = (array)$value;
-        }
+        self::$cookieHeader[$label] = [$value, $options];
     }
 
     /**

@@ -2,7 +2,7 @@
 
 use AbmmHasan\WebFace\Middleware\PreTag;
 use AbmmHasan\WebFace\Request\Asset\URL;
-use AbmmHasan\WebFace\Response as ResponseAlias;
+use AbmmHasan\WebFace\Response\Response as ResponseAlias;
 use AbmmHasan\WebFace\Router\Asset\RouteDepot;
 use AbmmHasan\WebFace\Router\Asset\Settings;
 use AbmmHasan\WebFace\Router\Router;
@@ -21,6 +21,7 @@ if (!function_exists('responseFlush')) {
 if (!function_exists('response')) {
     /**
      * Get response instance
+     *
      * @throws Exception
      */
     function response(string|array $content = null, int $status = 200, array $headers = []): ResponseAlias

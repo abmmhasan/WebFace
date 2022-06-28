@@ -1,21 +1,16 @@
 <?php
 
-namespace AbmmHasan\WebFace;
+namespace AbmmHasan\WebFace\Response;
 
-use AbmmHasan\WebFace\Support\HTTPResource;
-use AbmmHasan\WebFace\Support\ResponseDepot;
+use AbmmHasan\WebFace\Request\Asset\URL;
+use AbmmHasan\WebFace\Response\Asset\HTTPResource;
+use AbmmHasan\WebFace\Response\Asset\ResponseDepot;
 use Exception;
 use InvalidArgumentException;
 
 final class Response
 {
     private static Response $instance;
-
-    protected array $applicableFormat = [
-        'render',
-        'json',
-        'csv'
-    ];
 
     /**
      * Set default response date
@@ -118,6 +113,9 @@ final class Response
                 unset($controlCache[$item]);
             }
         }
+        if (isset($controlCache['private'])) {
+            unset($controlCache['public']);
+        }
         ResponseDepot::setCache('Cache-Control', $controlCache);
         return self::$instance;
     }
@@ -139,7 +137,6 @@ final class Response
         if ($diff = array_diff(
             $options,
             [
-                'Accept-Encoding',
                 'Accept-Language',
                 'DPR',
                 'Content-DPR',
@@ -161,28 +158,32 @@ final class Response
     }
 
     /**
-     * Set Modifiers (Last Modified, ETag)
+     * Set ETag
      *
-     * @param array $options
-     * @param bool $weakETag
+     * @param string $tag default:auto (will be calculated automatically if 'auto' is passed as value)
+     * @param bool $isWeak
+     * @return Response
+     */
+    public function eTag(string $tag = 'auto', bool $isWeak = false): Response
+    {
+        $tag = trim($tag);
+        if (!str_starts_with($tag, '"')) {
+            $tag = $this->prepareStringQuote($tag);
+        }
+        ResponseDepot::setCache('ETag', ($isWeak ? "W/" : '') . $tag);
+        return self::$instance;
+    }
+
+    /**
+     * Set Last Modified
+     *
+     * @param string $time
      * @return Response
      * @throws Exception
      */
-    public function modifier(array $options, bool $weakETag = false): Response
+    public function lastModified(string $time): Response
     {
-        if (isset($options['Last-Modified'])) {
-            ResponseDepot::setCache('Last-Modified', httpDate($options['Last-Modified']));
-        }
-        if (!empty($options['ETag'])) {
-            $options['ETag'] = trim($options['ETag']);
-            if (!str_starts_with($options['ETag'], '"')) {
-                $options['ETag'] = $this->prepareStringQuote($options['ETag']);
-            }
-            ResponseDepot::setCache(
-                'ETag',
-                ($weakETag ? "W/" : '') . $options['ETag']
-            );
-        }
+        ResponseDepot::setCache('Last-Modified', httpDate($time));
         return self::$instance;
     }
 
@@ -192,26 +193,34 @@ final class Response
      * https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies
      *
      * @param array $asset [name => value]
-     * @param int|null $max_age
-     * @param string $same_site
+     * @param array $options [path => 'value1', samesite => ,...]
      * @return Response
+     * @throws Exception
      */
-    public function cookie(array $asset, int $max_age = null, string $same_site = 'Lax'): Response
+    public function cookie(array $asset, array $options): Response
     {
-        if (!empty($same_site) && !in_array($same_site, ['Strict', 'Lax', 'None'])) {
-            throw new InvalidArgumentException(
-                "Invalid SameSite value! It could be any of " . implode(',', ['Strict', 'Lax', 'None'])
-            );
+        if (!empty($options['expires']) && !is_int($options['expires'])) {
+            throw new Exception("Invalid Expire value!");
+        }
+        if (!empty($options['maxage']) && !is_int($options['maxage'])) {
+            throw new Exception("Invalid MaxAge value!");
+        }
+        if (!empty($options['path']) && filter_var('https://www.example.com' . $options['path'], FILTER_VALIDATE_URL)) {
+            throw new Exception("Invalid Path!");
+        }
+        if (!empty($options['domain']) && filter_var($options['domain'], FILTER_VALIDATE_DOMAIN)) {
+            throw new Exception("Invalid Domain!");
+        }
+        if (!empty($options['samesite'])) {
+            if (!in_array($options['samesite'], ['Strict', 'Lax', 'None'])) {
+                throw new Exception("Invalid SameSite value!");
+            }
+            if ($options['samesite'] === 'None' && URL::get('scheme') !== 'https') {
+                throw new Exception("Cookie with 'SameSite=None' attribute, must also be secured!");
+            }
         }
         foreach ($asset as $name => $value) {
-            $cookies = [
-                'value' => $value,
-                'samesite' => $same_site
-            ];
-            if ($max_age !== null) {
-                $cookies['maxage'] = $max_age;
-            }
-            ResponseDepot::setCookie($name, $cookies);
+            ResponseDepot::setCookie($name, $value, $options);
         }
         return self::$instance;
     }

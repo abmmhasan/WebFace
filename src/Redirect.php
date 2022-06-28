@@ -4,9 +4,9 @@
 namespace AbmmHasan\WebFace;
 
 
-use AbmmHasan\WebFace\Base\BaseResponse;
 use AbmmHasan\WebFace\Request\Asset\URL;
-use AbmmHasan\WebFace\Support\ResponseDepot;
+use AbmmHasan\WebFace\Response\Asset\BaseResponse;
+use AbmmHasan\WebFace\Response\Asset\ResponseDepot;
 use Exception;
 
 /**

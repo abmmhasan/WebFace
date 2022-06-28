@@ -21,6 +21,20 @@ final class Settings
     public static ?string $preTagFileLocation = null;
 
     /**
+     * Weak ETag hash method
+     *
+     * @var string|null
+     */
+    public static ?string $weakEtagMethod = 'crc32c';
+
+    /**
+     * Weak ETag hash method
+     *
+     * @var string|null
+     */
+    public static ?string $etagMethod = 'md4';
+
+    /**
      * Path to route resources
      *
      * @var string|null
@@ -88,5 +102,5 @@ final class Settings
      *
      * @var string
      */
-    public static string $cookieSameSite = '';
+    public static string $cookieSameSite = 'Lax';
 }

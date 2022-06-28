@@ -5,10 +5,9 @@ namespace AbmmHasan\WebFace\Router\Asset;
 
 
 use AbmmHasan\WebFace\Request\Asset\URL;
-use AbmmHasan\WebFace\Support\ResponseDepot;
+use AbmmHasan\WebFace\Response\Asset\ResponseDepot;
 use Exception;
 use ReflectionException;
-use function projectPath;
 
 abstract class BaseRoute
 {
@@ -52,6 +51,7 @@ abstract class BaseRoute
     public function __construct()
     {
         Settings::$basePath = URL::get('base');
+        Settings::$cookieDomain = URL::get('host');
     }
 
     /**
@@ -61,8 +61,7 @@ abstract class BaseRoute
      */
     protected function loadCache(): bool
     {
-        $cachePath = projectPath() . Settings::$cachePath;
-        if (file_exists($cachePath)) {
+        if (file_exists($cachePath = Settings::$cachePath)) {
             $this->routes = require($cachePath);
             return true;
         }
@@ -90,7 +89,7 @@ abstract class BaseRoute
      * @param array|callable $callback
      * @param array $routeResource
      */
-    protected function buildRoute(array $methods, string $pattern, array|callable $callback, array &$routeResource)
+    protected function buildRoute(array $methods, string $pattern, array|callable $callback, array &$routeResource): void
     {
         $routeInfo = [
             'before' => $this->middleware['before'] ?? [],
@@ -136,7 +135,7 @@ abstract class BaseRoute
      *
      * @param $settings
      */
-    protected function prepareGroupContent($settings)
+    protected function prepareGroupContent($settings): void
     {
         if (!empty($settings['prefix'])) {
             $this->prefix = explode('/', trim($settings['prefix']));
@@ -173,9 +172,10 @@ abstract class BaseRoute
     {
         // Current Relative URL: remove rewrite base path from it (allows running the router in a subdirectory)
         $uri = '/' . trim(substr(URL::get('path'), strlen(Settings::$basePath)), '/');
+        $toMatch = $method . ' ' . $uri;
         // absolute match
         if (isset($routes[$uri])) {
-            RouteDepot::setCurrentRoute($method . ' ' . $uri);
+            RouteDepot::setCurrentRoute($toMatch);
             if (!$this->routeMiddlewareCheck($routes[$uri]['before'] ?? [], $this->globalMiddleware['route'])) {
                 return true;
             }
@@ -183,6 +183,7 @@ abstract class BaseRoute
             Invoke::middlewareGroup($routes[$uri]['after'] ?? []);
             return true;
         }
+
         // pattern match
         foreach ($routes as $storedPattern => $route) {
             if (!str_contains($storedPattern, '{')) {
@@ -191,7 +192,7 @@ abstract class BaseRoute
             if (preg_match_all('#^' .
                 preg_replace_callback('/{(.*?)(:.*?)?}/', [$this, 'prepareMatch'], $storedPattern) .
                 '$#u', $uri, $matches, PREG_SET_ORDER)) {
-                RouteDepot::setCurrentRoute($method . ' ' . $storedPattern);
+                RouteDepot::setCurrentRoute($method . ' ' . $storedPattern, $toMatch);
                 if (!$this->routeMiddlewareCheck($route['before'] ?? [], $this->globalMiddleware['route'])) {
                     return true;
                 }
@@ -214,7 +215,7 @@ abstract class BaseRoute
     private function prepareMatch(array $matches): mixed
     {
         $this->keyMatch[] = $matches[1];
-        return $this->pattern[$matches[2] ?? ':all'] ?? $this->pattern[':all'];
+        return $this->pattern[$matches[2]];
     }
 
     /**

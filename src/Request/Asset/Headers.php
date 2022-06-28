@@ -119,7 +119,7 @@ final class Headers extends Utility
             }
             self::$content = new Arrject([
                 'parts' => $parts,
-                'type' => $type,
+                'type' => empty($type) ? null : $type,
                 'charset' => $charset,
                 'length' => self::$headers['Content-Length'] ?? 0,
                 'md5' => strtolower(self::$headers['Content-Md5'] ?? '')

@@ -3,10 +3,10 @@
 namespace AbmmHasan\WebFace\Router;
 
 use AbmmHasan\WebFace\Request\Asset\URL;
+use AbmmHasan\WebFace\Response\Asset\ResponseDepot;
 use AbmmHasan\WebFace\Router\Asset\BaseRoute;
 use AbmmHasan\WebFace\Router\Asset\Invoke;
 use AbmmHasan\WebFace\Router\Asset\Settings;
-use AbmmHasan\WebFace\Support\ResponseDepot;
 use BadMethodCallException;
 use Error;
 use Exception;
@@ -18,6 +18,8 @@ use function responseFlush;
  */
 final class Router extends BaseRoute
 {
+    private array $patternKeys;
+
     /**
      * Router constructor.
      *
@@ -25,6 +27,7 @@ final class Router extends BaseRoute
     public function __construct()
     {
         parent::__construct();
+        $this->patternKeys = array_keys($this->pattern);
         if (Settings::$cacheLoad && !empty(Settings::$cachePath)) {
             $this->cacheLoaded = $this->loadCache();
         }
@@ -63,7 +66,7 @@ final class Router extends BaseRoute
             }
             return $this;
         } catch (Error $e) {
-            throw new Exception("'$property': Invalid settings or Type mismatch");
+            throw new Exception("'$property': Invalid setting or Type mismatch");
         }
     }
 
@@ -82,6 +85,7 @@ final class Router extends BaseRoute
             throw new Exception('You can\'t override an existing rule!');
         }
         $this->pattern[$alias] = '(' . trim($regex, ' ()') . ')';
+        $this->patternKeys = array_keys($this->pattern);
         return $this;
     }
 
@@ -91,6 +95,7 @@ final class Router extends BaseRoute
      * @param $method
      * @param $params
      * @return bool|void
+     * @throws Exception
      */
     public function __call($method, $params)
     {
@@ -110,6 +115,7 @@ final class Router extends BaseRoute
      * @param string $route
      * @param array|callable $callback
      * @return bool|void
+     * @throws Exception
      */
     public function match(array $methods, string $route, array|callable $callback)
     {
@@ -119,12 +125,16 @@ final class Router extends BaseRoute
         if ($diff = array_diff($methods, $this->validMethods)) {
             throw new BadMethodCallException('Invalid method ' . implode(', ', $diff));
         }
-        $this->buildRoute(
-            $methods,
-            $this->preparePattern($route),
-            $callback,
-            $this->routes
-        );
+        $pattern = $this->preparePattern($route);
+        if (preg_match_all('/{(.*?)(:.*?)?}/', $pattern, $matches, PREG_SET_ORDER)) {
+            if ((count($matches) * 4) !== count($matches, COUNT_RECURSIVE)) {
+                throw new Exception("'$pattern' have typeless parameters!");
+            }
+            if ($unacceptable = array_diff(array_column($matches, 2), $this->patternKeys)) {
+                throw new Exception("'$pattern' have unacceptable type(" . implode(', ', $unacceptable) . ")!");
+            }
+        }
+        $this->buildRoute($methods, $pattern, $callback, $this->routes);
     }
 
     /**

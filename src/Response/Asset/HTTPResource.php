@@ -1,7 +1,7 @@
 <?php
 
 
-namespace AbmmHasan\WebFace\Support;
+namespace AbmmHasan\WebFace\Response\Asset;
 
 
 final class HTTPResource

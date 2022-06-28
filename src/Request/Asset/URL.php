@@ -64,11 +64,10 @@ final class URL extends Utility
                 $requestMethod = 'GET';
             } elseif ($requestMethod === 'POST') {
                 $headers = Headers::all();
-                if (isset($headers['X-HTTP-Method-Override'])) {
-                    $requestMethod = $headers['X-HTTP-Method-Override'];
-                } elseif (!is_null($method = CommonAsset::post('_method'))) {
-                    $requestMethod = $method;
-                }
+                $requestMethod = $headers['X-HTTP-Method-Override']
+                    ?? $headers['HTTP-Method-Override']
+                    ?? CommonAsset::post('_method')
+                    ?? $requestMethod;
             }
             self::$method = new Arrject([
                 'main' => $originalMethod,

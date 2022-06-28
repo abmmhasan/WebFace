@@ -3,9 +3,10 @@
 
 namespace AbmmHasan\WebFace;
 
-use AbmmHasan\WebFace\Base\BaseResponse;
-use AbmmHasan\WebFace\Support\HTTPResource;
-use AbmmHasan\WebFace\Support\ResponseDepot;
+use AbmmHasan\WebFace\Response\Asset\BaseResponse;
+use AbmmHasan\WebFace\Response\Asset\HTTPResource;
+use AbmmHasan\WebFace\Response\Asset\ResponseDepot;
+use AbmmHasan\WebFace\Response\Response;
 use Exception;
 use InvalidArgumentException;
 
@@ -49,7 +50,6 @@ final class ResponseX extends BaseResponse
     {
 
         self::$instance = self::$instance ?? new self();
-
         if ($response_type === 'instance') {
             return self::$instance;
         } elseif ($response_type === 'status') {

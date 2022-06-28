@@ -12,7 +12,7 @@ final class CommonAsset extends Utility
     private static Arrject $files;
     private static Arrject $server;
     private static Arrject $cookie;
-    private static $body;
+    private static Arrject $body;
     private static $raw;
 
     /**
@@ -70,11 +70,13 @@ final class CommonAsset extends Utility
     /**
      * Get raw input (Not available with enctype="multipart/form-data")
      *
-     * @return false|string
+     * @return string|bool
      */
-    public static function raw(): bool|string
+    public static function raw(): string|bool
     {
-        return self::$raw ??= file_get_contents('php://input');
+        return self::$raw ??= (Headers::content('type') === 'multipart/form-data'
+            ? false
+            : file_get_contents('php://input'));
     }
 
     /**
@@ -86,27 +88,15 @@ final class CommonAsset extends Utility
     public static function parsedBody(string $key = null): mixed
     {
         if (!isset(self::$body) && ($rawBody = self::raw())) {
-            self::$body = new Arrject(match (Headers::content('type')) {
-                'application/json' => json_decode($rawBody, true),
-                'application/xml' => self::getParsedXML($rawBody),
-                default => []
-            });
+            $type = Headers::content('type');
+            self::$body = new Arrject(
+                ($type === 'application/json' ||
+                    preg_match_all('/^application\/(.+\+)?json$/', $type) === 1)
+                    ? json_decode($rawBody, true)
+                    : []
+            );
         }
         return self::getValue(self::$body, $key);
-    }
-
-    /**
-     * XML parser
-     *
-     * @param $input
-     * @return mixed
-     */
-    private static function getParsedXML($input): mixed
-    {
-        $input = preg_replace("/(<\/?)(\w+):([^>]*>)/", "$1$2$3", $input);
-        $input = preg_replace('/\s\s+/', " ", $input);
-        $input = simplexml_load_string($input);
-        return json_decode(json_encode($input), true);
     }
 
     /**
@@ -142,12 +132,12 @@ final class CommonAsset extends Utility
         sort($srcKeys);
 
         // is the source array a target?
-        if ($srcKeys == $tgtKeys) {
+        if ($srcKeys === $tgtKeys) {
             // get error, name, size, etc
             foreach ($srcKeys as $key) {
                 if (is_array($src[$key])) {
                     // multiple file field names for each error, name, size, etc.
-                    foreach ((array)$src[$key] as $field => $value) {
+                    foreach ($src[$key] as $field => $value) {
                         $files[$field][$key] = $value;
                     }
                 } else {

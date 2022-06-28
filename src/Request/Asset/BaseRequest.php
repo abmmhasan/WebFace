@@ -15,6 +15,9 @@ abstract class BaseRequest
     protected mixed $parsedBody;
     protected Arrject $request;
 
+    /**
+     * @throws Exception
+     */
     public function __construct()
     {
         // Request assets
@@ -28,13 +31,19 @@ abstract class BaseRequest
 
     /**
      * Get Request in prioritized order
+     * https://specs.openstack.org/openstack/api-wg/guidelines/http/methods.html
      *
      * @return array
+     * @throws Exception
      */
     protected function getRequest(): array
     {
-        return (is_null($this->parsedBody) ? [] : $this->parsedBody->toArray()) +
-            $this->post->toArray() + $this->files->toArray() + $this->query->toArray();
+        return in_array($this->getAsset('converted'), ['GET', 'DELETE'])
+            ? $this->query->toArray()
+            : (
+                (!$this->parsedBody ? [] : $this->parsedBody->toArray()) +
+                $this->post->toArray() + $this->files->toArray() + $this->query->toArray()
+            );
     }
 
     /**

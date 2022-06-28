@@ -14,6 +14,7 @@ final class RouteDepot
     private static string $routeInOperation = '/';
     private static mixed $routeResource;
     private static array $cachedRouteResource;
+    private static int $routeSignature;
 
     /**
      * Prepare and cache route
@@ -70,11 +71,13 @@ final class RouteDepot
     /**
      * Set active route
      *
+     * @param string $pattern
      * @param string|null $route
      */
-    public static function setCurrentRoute(string $route = null): void
+    public static function setCurrentRoute(string $pattern, string $route = null): void
     {
-        self::$routeInOperation = $route;
+        self::$routeInOperation = $pattern;
+        self::$routeSignature = crc32($route ?? $pattern);
     }
 
     /**
@@ -85,6 +88,16 @@ final class RouteDepot
     public static function getCurrentRoute(): string
     {
         return self::$routeInOperation;
+    }
+
+    /**
+     * Get active route
+     *
+     * @return string
+     */
+    public static function getCurrentRouteSignature(): string
+    {
+        return self::$routeSignature;
     }
 
     /**

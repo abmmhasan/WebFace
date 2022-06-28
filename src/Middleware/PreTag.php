@@ -40,10 +40,7 @@ class PreTag
         $this->loadAsset();
         $this->setByPath($path, $tag);
         if (!empty($this->asset)) {
-            return file_put_contents(
-                projectPath() . Settings::$preTagFileLocation,
-                json_encode($this->asset), LOCK_EX
-            );
+            return file_put_contents(Settings::$preTagFileLocation, json_encode($this->asset), LOCK_EX);
         }
         return false;
     }
@@ -53,8 +50,8 @@ class PreTag
      */
     private function loadAsset()
     {
-        if (!empty(Settings::$preTagFileLocation) && file_exists($path = projectPath() . Settings::$preTagFileLocation)) {
-            $this->asset = json_decode(file_get_contents($path), true);
+        if (file_exists(Settings::$preTagFileLocation)) {
+            $this->asset = json_decode(file_get_contents(Settings::$preTagFileLocation), true);
         }
     }
 
@@ -65,13 +62,12 @@ class PreTag
      * @param $tag
      * @throws Exception
      */
-    private function setByPath($path, $tag)
+    private function setByPath($path, $tag): void
     {
         $list = RouteDepot::getResource('list');
         if (empty($list) || !in_array($path, $list)) {
             throw new Exception("Route path '{$path}' invalid!");
         }
-
         $this->asset[$path] = $tag;
     }
 

@@ -1,15 +1,13 @@
 <?php
 
 
-namespace AbmmHasan\WebFace\Base;
+namespace AbmmHasan\WebFace\Response\Asset;
 
 
 use AbmmHasan\WebFace\Request\Asset\BaseRequest;
 use AbmmHasan\WebFace\Request\Asset\Headers;
 use AbmmHasan\WebFace\Request\Asset\URL;
 use AbmmHasan\WebFace\Router\Asset\Settings;
-use AbmmHasan\WebFace\Support\HTTPResource;
-use AbmmHasan\WebFace\Support\ResponseDepot;
 use ArrayObject;
 use Exception;
 use JsonSerializable;
