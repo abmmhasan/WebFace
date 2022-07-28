@@ -2,6 +2,7 @@
 
 use AbmmHasan\WebFace\Middleware\PreTag;
 use AbmmHasan\WebFace\Request\Asset\URL;
+use AbmmHasan\WebFace\Response\Asset\Dispatch;
 use AbmmHasan\WebFace\Response\Response as ResponseAlias;
 use AbmmHasan\WebFace\Router\Asset\RouteDepot;
 use AbmmHasan\WebFace\Router\Asset\Settings;
@@ -10,11 +11,12 @@ use AbmmHasan\WebFace\Router\Router;
 if (!function_exists('responseFlush')) {
     /**
      * Send response
+     *
      * @throws Exception
      */
-    function responseFlush()
+    function responseFlush(): void
     {
-        (new ResponseAlias())->helloWorld();
+        (new Dispatch())->hello();
     }
 }
 
@@ -27,17 +29,6 @@ if (!function_exists('response')) {
     function response(string|array $content = null, int $status = 200, array $headers = []): ResponseAlias
     {
         return ResponseAlias::instance($content, $status, $headers);
-    }
-}
-
-if (!function_exists('projectPath')) {
-    /**
-     * Get current project path
-     */
-    function projectPath(): string
-    {
-        $resolve = php_sapi_name() === 'cli' ? './' : '..';
-        return realpath($resolve) . DIRECTORY_SEPARATOR;
     }
 }
 

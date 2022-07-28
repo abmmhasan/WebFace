@@ -164,7 +164,7 @@ final class Response
      * @param bool $isWeak
      * @return Response
      */
-    public function eTag(string $tag = 'auto', bool $isWeak = false): Response
+    public function eTag(string $tag = 'auto', bool $isWeak = true): Response
     {
         $tag = trim($tag);
         if (!str_starts_with($tag, '"')) {
@@ -192,18 +192,15 @@ final class Response
      *
      * https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies
      *
-     * @param array $asset [name => value]
-     * @param array $options [path => 'value1', samesite => ,...]
+     * @param array $asset [name_1 => value_1, name_2 => value_2,...]
+     * @param array $options [applicable array keys: path, samesite, expires, domain,]
      * @return Response
      * @throws Exception
      */
-    public function cookie(array $asset, array $options): Response
+    public function cookie(array $asset, array $options = []): Response
     {
         if (!empty($options['expires']) && !is_int($options['expires'])) {
             throw new Exception("Invalid Expire value!");
-        }
-        if (!empty($options['maxage']) && !is_int($options['maxage'])) {
-            throw new Exception("Invalid MaxAge value!");
         }
         if (!empty($options['path']) && filter_var('https://www.example.com' . $options['path'], FILTER_VALIDATE_URL)) {
             throw new Exception("Invalid Path!");
@@ -216,7 +213,7 @@ final class Response
                 throw new Exception("Invalid SameSite value!");
             }
             if ($options['samesite'] === 'None' && URL::get('scheme') !== 'https') {
-                throw new Exception("Cookie with 'SameSite=None' attribute, must also be secured!");
+                throw new Exception("Cookie with 'SameSite=None' attribute, must use HTTPS protocol!");
             }
         }
         foreach ($asset as $name => $value) {
@@ -246,7 +243,7 @@ final class Response
      * @param string $string
      * @return string
      */
-    private function prepareStringQuote(string $string): string
+    public function prepareStringQuote(string $string): string
     {
         $string = preg_replace('/\\\\(.)|"/', '$1', trim($string));
         return '"' . addcslashes($string, '"\\"') . '"';

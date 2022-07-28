@@ -28,7 +28,7 @@ final class Settings
     public static ?string $weakEtagMethod = 'crc32c';
 
     /**
-     * Weak ETag hash method
+     * ETag hash method
      *
      * @var string|null
      */
@@ -63,7 +63,7 @@ final class Settings
     public static string $middlewareCallMethod = 'handle';
 
     /**
-     * Default Cookie Lifetime
+     * Default Cookie Lifetime (in minutes)
      *
      * @var int
      */
@@ -79,9 +79,11 @@ final class Settings
     /**
      * The web domain cookie is eligible for
      *
-     * @var string
+     * Leading dot for compatibility or use subdomain
+     *
+     * @var string|null
      */
-    public static string $cookieDomain = '';
+    public static ?string $cookieDomain = null;
 
     /**
      * Is the cookie secure (eligible)

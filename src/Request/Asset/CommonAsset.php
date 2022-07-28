@@ -87,7 +87,7 @@ final class CommonAsset extends Utility
      */
     public static function parsedBody(string $key = null): mixed
     {
-        if (!isset(self::$body) && ($rawBody = self::raw())) {
+        if (!isset(self::$body) && ($rawBody = self::raw()) !== false) {
             $type = Headers::content('type');
             self::$body = new Arrject(
                 ($type === 'application/json' ||

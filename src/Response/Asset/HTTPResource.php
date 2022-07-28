@@ -117,8 +117,8 @@ final class HTTPResource
 
     public static array $conditionalCache = [
         // Other Separate Directives
-        'last_modified' => false,
-        'vary' => false,
-        'etag' => false
+        'Last-Modified' => false,
+        'Vary' => false,
+        'ETag' => false
     ];
 }

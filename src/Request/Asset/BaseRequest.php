@@ -38,11 +38,13 @@ abstract class BaseRequest
      */
     protected function getRequest(): array
     {
-        return in_array($this->getAsset('converted'), ['GET', 'DELETE'])
+        return in_array($this->getAsset('method'), ['GET', 'DELETE'])
             ? $this->query->toArray()
             : (
                 (!$this->parsedBody ? [] : $this->parsedBody->toArray()) +
-                $this->post->toArray() + $this->files->toArray() + $this->query->toArray()
+                $this->post->toArray() +
+                $this->files->toArray() +
+                $this->query->toArray()
             );
     }
 

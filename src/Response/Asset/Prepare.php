@@ -4,7 +4,10 @@ namespace AbmmHasan\WebFace\Response\Asset;
 
 use AbmmHasan\WebFace\Request\Asset\Headers;
 use AbmmHasan\WebFace\Request\Asset\URL;
+use AbmmHasan\WebFace\Router\Asset\Settings;
+use ArrayObject;
 use Exception;
+use JsonSerializable;
 
 class Prepare
 {
@@ -75,12 +78,16 @@ class Prepare
      */
     public static function contentAndCache(): void
     {
+
+        ResponseDepot::setContent(self::contentParser(ResponseDepot::getContent()));
+        $contentType = ResponseDepot::getHeader('Content-Type');
+        self::calculateEtag();
+
         $isUnmodified = self::notModified();
         $isEmpty = self::empty();
         if ($isEmpty || $isUnmodified) {
             return;
         }
-        $contentType = ResponseDepot::getHeader('Content-Type');
 
         // Content-type based on the Request
         if ($contentType === null) {
@@ -93,10 +100,12 @@ class Prepare
             }
         }
 
-        if (empty($contentType) || !$applicableViaAccept = array_intersect(
-            array_merge($contentType, ['*/*']),
-            Headers::accept('Accept')
-        )) {
+        if (ResponseDepot::getStatus() < 400 &&
+            (empty($contentType) || !$applicableViaAccept = array_intersect(
+                    array_merge($contentType, ['*/*']),
+                    Headers::accept('Accept')
+                ))
+        ) {
             ResponseDepot::setStatus(406);
             ResponseDepot::setContent('');
         }
@@ -108,6 +117,53 @@ class Prepare
     }
 
     /**
+     * Calculate Etag
+     *
+     * @return void
+     */
+    private static function calculateEtag(): void
+    {
+        match (ResponseDepot::getCache('ETag')) {
+            'W/"auto"' => ResponseDepot::setCache('ETag',
+                'W/"' . hash(
+                    Settings::$weakEtagMethod,
+                    ResponseDepot::getContent()
+                ) . '"'
+            ),
+            '"auto"' => ResponseDepot::setCache('ETag',
+                '"' . hash(
+                    Settings::$etagMethod,
+                    json_encode(ResponseDepot::getHeader()) . ';' . ResponseDepot::getContent()
+                ) . '"'
+            ),
+            default => null
+        };
+    }
+
+    /**
+     * Get response
+     *
+     * @param $content
+     * @return string|bool
+     * @throws Exception
+     */
+    public static function contentParser($content): string|bool
+    {
+        if (
+            is_array($content) ||
+            $content instanceof JsonSerializable ||
+            $content instanceof ArrayObject
+        ) {
+            ResponseDepot::setHeader('Content-Type', 'application/json', false);
+            return json_encode($content, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+        }
+        if (!is_string($content)) {
+            throw new Exception('Unable to parse content');
+        }
+        return $content;
+    }
+
+    /**
      * Cache Control Calculator
      *
      * This will set the Control directives to desired standard
@@ -116,7 +172,7 @@ class Prepare
      */
     private static function computeCacheControl($cache): mixed
     {
-        if (!$cache['Cache-Control']) {
+        if (!isset($cache['Cache-Control'])) {
             if (isset($cache['Last-Modified'])) {
                 return ['private', 'must-revalidate'];
             }
