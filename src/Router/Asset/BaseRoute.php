@@ -43,6 +43,8 @@ abstract class BaseRoute
         ':any' => '([a-zA-Z0-9\.\-_%= \+\@\(\)]+)',
         ':all' => '(.*)',
     ];
+    protected array $patternKeys;
+
     private array $keyMatch = [];
 
     /**
@@ -87,15 +89,15 @@ abstract class BaseRoute
      * @param array $methods
      * @param string $pattern
      * @param array|callable $callback
-     * @param array $routeResource
      */
-    protected function buildRoute(array $methods, string $pattern, array|callable $callback, array &$routeResource): void
+    protected function buildRoute(array $methods, string $pattern, array|callable $callback): void
     {
         $routeInfo = [
             'before' => $this->middleware['before'] ?? [],
             'after' => $this->middleware['after'] ?? [],
             'fn' => $callback
         ];
+        $routeType = str_contains($pattern, '{') ? 'pattern' : 'plain';
         if (is_array($callback)) {
             if (!empty($callback['middleware']) || !empty($callback['before'])) {
                 $before = array_unique(array_merge(
@@ -119,14 +121,14 @@ abstract class BaseRoute
         $routeInfo['name'] ??= implode('.',
             array_filter(
                 explode('/',
-                    str_replace(['{', '}'], '', $pattern)
+                    str_replace(array_merge(['{', '}'], $this->patternKeys), '', $pattern)
                 )
             )
         );
         foreach ($methods as $method) {
-            $routeResource['named'][$routeInfo['name']] ??= [$method, $pattern];
-            $routeResource['list'][] = $pattern;
-            $routeResource[$method][$pattern] = $routeInfo;
+            $this->routes['named'][$routeInfo['name']] ??= [$method, $pattern];
+            $this->routes['list'][] = $pattern;
+            $this->routes[$method][$routeType][$pattern] = $routeInfo;
         }
     }
 
@@ -167,6 +169,7 @@ abstract class BaseRoute
      * @param $method
      * @return bool
      * @throws ReflectionException
+     * @throws Exception
      */
     protected function handle($routes, $method): bool
     {
@@ -174,7 +177,7 @@ abstract class BaseRoute
         $uri = '/' . trim(substr(URL::get('path'), strlen(Settings::$basePath)), '/');
         $toMatch = $method . ' ' . $uri;
         // absolute match
-        if (isset($routes[$uri])) {
+        if (isset($routes['plain'][$uri])) {
             RouteDepot::setCurrentRoute($toMatch);
             if (!$this->routeMiddlewareCheck($routes[$uri]['before'] ?? [], $this->globalMiddleware['route'])) {
                 return true;
@@ -185,10 +188,7 @@ abstract class BaseRoute
         }
 
         // pattern match
-        foreach ($routes as $storedPattern => $route) {
-            if (!str_contains($storedPattern, '{')) {
-                continue;
-            }
+        foreach ($routes['pattern'] as $storedPattern => $route) {
             if (preg_match_all('#^' .
                 preg_replace_callback('/{(.*?)(:.*?)?}/', [$this, 'prepareMatch'], $storedPattern) .
                 '$#u', $uri, $matches, PREG_SET_ORDER)) {
@@ -246,7 +246,6 @@ abstract class BaseRoute
      * @param array $check
      * @param array $collection
      * @return bool
-     * @throws ReflectionException
      * @throws Exception
      */
     private function routeMiddlewareCheck(array $check, array $collection): bool

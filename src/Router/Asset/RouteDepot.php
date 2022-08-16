@@ -6,8 +6,7 @@ namespace AbmmHasan\WebFace\Router\Asset;
 
 use AbmmHasan\WebFace\Router\Router;
 use Closure;
-use Laravel\SerializableClosure\Exceptions\PhpVersionNotSupportedException;
-use Laravel\SerializableClosure\SerializableClosure;
+use Opis\Closure\SerializableClosure;
 
 final class RouteDepot
 {
@@ -20,7 +19,6 @@ final class RouteDepot
      * Prepare and cache route
      *
      * @return bool|int
-     * @throws PhpVersionNotSupportedException
      */
     public static function cache(): bool|int
     {
@@ -105,7 +103,6 @@ final class RouteDepot
      *
      * @param $content
      * @return array
-     * @throws PhpVersionNotSupportedException
      */
     private static function parseResource($content): array
     {

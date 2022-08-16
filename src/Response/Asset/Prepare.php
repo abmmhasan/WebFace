@@ -9,7 +9,7 @@ use ArrayObject;
 use Exception;
 use JsonSerializable;
 
-class Prepare
+final class Prepare
 {
     private static array $applicableStatus = [
         200 => 200,

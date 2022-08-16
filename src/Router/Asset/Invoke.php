@@ -4,17 +4,16 @@ namespace AbmmHasan\WebFace\Router\Asset;
 
 use Closure;
 use Exception;
-use ReflectionException;
 use function unserialize;
 
-class Invoke
+final class Invoke
 {
     /**
      * Invoke method
      *
      * @param array|Closure|string $fn
      * @param array $params
-     * @throws ReflectionException|Exception
+     * @throws Exception
      */
     public static function method(array|Closure|string $fn, array $params = []): void
     {
@@ -30,10 +29,7 @@ class Invoke
                 ->registerClosure('wf', $fn, $params)
                 ->callClosure('wf'),
 
-            is_string($fn) && (
-                str_starts_with($fn, 'O:47:"Laravel\\SerializableClosure\\SerializableClosure') ||
-                str_starts_with($fn, 'C:32:"Opis\\Closure\\SerializableClosure')
-            ) =>
+            is_string($fn) && str_starts_with($fn, 'C:32:"Opis\\Closure\\SerializableClosure') =>
             container()
                 ->registerClosure('wf', unserialize($fn)->getClosure(), $params)
                 ->callClosure('wf'),
@@ -49,16 +45,19 @@ class Invoke
      * @param $fn
      * @param string $params
      * @return mixed
-     * @throws ReflectionException
+     * @throws Exception
      */
     public static function middleware($fn, string $params = ''): mixed
     {
         $params = array_filter(explode(',', $params));
         if ($fn instanceof Closure) {
-            return container()->registerClosure('wf', $fn, $params)
-                ->callClosure('wf');
+            $signature = trim(base64_encode(random_bytes(5)), '=');
+            return container()
+                ->registerClosure($signature, $fn, $params)
+                ->callClosure($signature);
         }
-        return container()->registerMethod($fn, Settings::$middlewareCallMethod, $params)
+        return container()
+            ->registerMethod($fn, Settings::$middlewareCallMethod, $params)
             ->callMethod($fn);
     }
 
@@ -67,7 +66,7 @@ class Invoke
      *
      * @param array $resource
      * @return void
-     * @throws ReflectionException
+     * @throws Exception
      */
     public static function middlewareGroup(array $resource): void
     {

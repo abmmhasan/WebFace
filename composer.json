@@ -30,7 +30,7 @@
     "ext-json": "*",
     "abmmhasan/oof": "dev-main",
     "abmmhasan/bucket": "dev-main",
-    "laravel/serializable-closure": "^1.1",
-    "opis/json-schema": "^2.3"
+    "opis/json-schema": "^2.3",
+    "opis/closure": "^3.6"
   }
 }

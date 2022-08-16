@@ -5,8 +5,6 @@ namespace AbmmHasan\WebFace;
 
 
 use AbmmHasan\WebFace\Request\Asset\URL;
-use AbmmHasan\WebFace\Response\Asset\BaseResponse;
-use AbmmHasan\WebFace\Response\Asset\ResponseDepot;
 use Exception;
 
 /**
@@ -14,7 +12,7 @@ use Exception;
  * @method static other(string $url, array $headers = []) Redirect after put or post (disable re-triggering the request)
  * @method static moved(string $url, array $headers = []) Link moved permanently (indicates reorganization)
  */
-final class Redirect extends BaseResponse
+final class Redirect
 {
     /**
      * Redirect to a location
@@ -53,7 +51,7 @@ final class Redirect extends BaseResponse
         if (empty($parameters[0]) || !filter_var($parameters[0], FILTER_VALIDATE_URL)) {
             throw new \InvalidArgumentException('Invalid URL');
         }
-        ResponseDepot::setContent(sprintf(
+        response(sprintf(
             '<!DOCTYPE html>
                 <html>
                     <head>
@@ -66,14 +64,8 @@ final class Redirect extends BaseResponse
                     </body>
                 </html>',
             htmlspecialchars($parameters[0], ENT_QUOTES)
-        ));
-        if (!empty($parameters[1])) {
-            foreach ($parameters[1] as $name => $value) {
-                ResponseDepot::setHeader($name, $value, false);
-            }
-        }
-        ResponseDepot::setStatus($available[$response_type]);
-        ResponseDepot::setHeader('Location', $parameters[0], false);
-        (new self)->helloWorld();
+        ), $available[$response_type], $parameters[1] ?? [])
+            ->header('Location', $parameters[0], false);
+        responseFlush();
     }
 }

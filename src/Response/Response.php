@@ -8,7 +8,7 @@ use AbmmHasan\WebFace\Response\Asset\ResponseDepot;
 use Exception;
 use InvalidArgumentException;
 
-final class Response
+class Response
 {
     private static Response $instance;
 

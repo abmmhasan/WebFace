@@ -6,7 +6,7 @@ use AbmmHasan\WebFace\Request\Asset\URL;
 use AbmmHasan\WebFace\Router\Asset\Settings;
 use Exception;
 
-class Dispatch
+final class Dispatch
 {
     /**
      * Dispatch response
@@ -55,16 +55,16 @@ class Dispatch
             if ($replace = (0 === strcasecmp($name, 'Content-Type'))) {
                 $sendCookie = str_starts_with($values, 'Content-Type: text/');
             }
-            header("$name: $values", $replace, $responseCode);
+            header("$name: $values", $replace);
         }
 
-        header('X-Powered-By: WebFace', true, $responseCode);
+        header('X-Powered-By: WebFace');
 
         if ($responseCode >= 400) {
-            header('Connection: close', true, $responseCode);
+            header('Connection: close');
         }
 
-        // Set Cookies
+        // Set Cookies (if text type response)
         if ($sendCookie && !!($responseCookies = ResponseDepot::getCookie())) {
             $expire = time() + (Settings::$cookieLifetime * 60);
             $domain = Settings::$cookieDomain ?? URL::get('host');

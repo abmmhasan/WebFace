@@ -16,10 +16,8 @@ use function responseFlush;
 /**
  * Class Router.
  */
-final class Router extends BaseRoute
+class Router extends BaseRoute
 {
-    private array $patternKeys;
-
     /**
      * Router constructor.
      *
@@ -134,7 +132,7 @@ final class Router extends BaseRoute
                 throw new Exception("'$pattern' have unacceptable type(" . implode(', ', $unacceptable) . ")!");
             }
         }
-        $this->buildRoute($methods, $pattern, $callback, $this->routes);
+        $this->buildRoute($methods, $pattern, $callback);
     }
 
     /**

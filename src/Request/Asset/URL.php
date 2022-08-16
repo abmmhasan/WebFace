@@ -34,7 +34,7 @@ final class URL extends Utility
             $scheme = self::getScheme();
             $full_url = $scheme . $host . ':' . $port . $request_uri;
             $parts = parse_url($full_url);
-            if (is_null(CommonAsset::server('HTTP_HOST')) && is_null(CommonAsset::server('SERVER_NAME'))) {
+            if (CommonAsset::server('HTTP_HOST') === null && CommonAsset::server('SERVER_NAME') === null) {
                 $parts[PHP_URL_HOST] = null;
             }
             self::$url = new Arrject([
@@ -80,12 +80,13 @@ final class URL extends Utility
 
     private static function getScheme(): string
     {
-        return ((isset($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) == 'on')
-            || (isset($_SERVER['REQUEST_SCHEME']) && $_SERVER['REQUEST_SCHEME'] === 'https')
-            || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
-            || (isset($_SERVER['HTTP_FRONT_END_HTTPS']) && $_SERVER['HTTP_FRONT_END_HTTPS'] === 'on')
-            || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) == 'https')
-            || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443))
+        $server = CommonAsset::server();
+        return ((isset($server['HTTPS']) && strtolower($server['HTTPS']) == 'on')
+            || (isset($server['REQUEST_SCHEME']) && $server['REQUEST_SCHEME'] === 'https')
+            || (isset($server['HTTP_X_FORWARDED_PROTO']) && $server['HTTP_X_FORWARDED_PROTO'] === 'https')
+            || (isset($server['HTTP_FRONT_END_HTTPS']) && $server['HTTP_FRONT_END_HTTPS'] === 'on')
+            || (isset($server['HTTP_X_FORWARDED_PROTO']) && strtolower($server['HTTP_X_FORWARDED_PROTO']) == 'https')
+            || (isset($server['SERVER_PORT']) && $server['SERVER_PORT'] == 443))
             ? 'https://' : 'http://';
     }
 }
