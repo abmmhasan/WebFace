@@ -4,16 +4,20 @@
 namespace AbmmHasan\WebFace\Request\Asset;
 
 use AbmmHasan\Bucket\Functional\Arrject;
+use AbmmHasan\WebFace\Common\StaticSingleInstance;
+use AbmmHasan\WebFace\Common\Value;
 
-final class CommonAsset extends Utility
+final class CommonAsset
 {
-    private static Arrject $query;
-    private static Arrject $post;
-    private static Arrject $files;
-    private static Arrject $server;
-    private static Arrject $cookie;
-    private static Arrject $body;
-    private static $raw;
+    private Arrject $query;
+    private Arrject $post;
+    private Arrject $files;
+    private Arrject $server;
+    private Arrject $cookie;
+    private Arrject $body;
+    private string $raw;
+
+    use Value, StaticSingleInstance;
 
     /**
      * Get Server Info
@@ -21,11 +25,11 @@ final class CommonAsset extends Utility
      * @param string|null $key
      * @return mixed
      */
-    public static function server(string $key = null): mixed
+    public function server(string $key = null): mixed
     {
-        self::$server ??= new Arrject($_SERVER);
+        $this->server ??= new Arrject($_SERVER);
 
-        return self::getValue(self::$server, $key);
+        return $this->find($this->server, $key);
     }
 
     /**
@@ -34,11 +38,11 @@ final class CommonAsset extends Utility
      * @param string|null $key
      * @return mixed
      */
-    public static function cookie(string $key = null): mixed
+    public function cookie(string $key = null): mixed
     {
-        self::$cookie ??= new Arrject($_COOKIE);
+        $this->cookie ??= new Arrject($_COOKIE);
 
-        return self::getValue(self::$cookie, $key);
+        return $this->find($this->cookie, $key);
     }
 
     /**
@@ -47,11 +51,11 @@ final class CommonAsset extends Utility
      * @param string|null $key
      * @return mixed
      */
-    public static function query(string $key = null): mixed
+    public function query(string $key = null): mixed
     {
-        self::$query ??= new Arrject($_GET);
+        $this->query ??= new Arrject($_GET);
 
-        return self::getValue(self::$query, $key);
+        return $this->find($this->query, $key);
     }
 
     /**
@@ -60,11 +64,11 @@ final class CommonAsset extends Utility
      * @param string|null $key
      * @return mixed
      */
-    public static function post(string $key = null): mixed
+    public function post(string $key = null): mixed
     {
-        self::$post ??= new Arrject($_POST);
+        $this->post ??= new Arrject($_POST);
 
-        return self::getValue(self::$post, $key);
+        return $this->find($this->post, $key);
     }
 
     /**
@@ -72,9 +76,9 @@ final class CommonAsset extends Utility
      *
      * @return string|bool
      */
-    public static function raw(): string|bool
+    public function raw(): string|bool
     {
-        return self::$raw ??= (Headers::content('type') === 'multipart/form-data'
+        return $this->raw ??= (Headers::instance()->content('type') === 'multipart/form-data'
             ? false
             : file_get_contents('php://input'));
     }
@@ -85,18 +89,18 @@ final class CommonAsset extends Utility
      * @param string|null $key
      * @return mixed
      */
-    public static function parsedBody(string $key = null): mixed
+    public function parsedBody(string $key = null): mixed
     {
-        if (!isset(self::$body) && ($rawBody = self::raw()) !== false) {
-            $type = Headers::content('type');
-            self::$body = new Arrject(
+        if (!isset($this->body) && ($rawBody = $this->raw()) !== false) {
+            $type = Headers::instance()->content('type');
+            $this->body = new Arrject(
                 ($type === 'application/json' ||
                     preg_match_all('/^application\/(.+\+)?json$/', $type) === 1)
                     ? json_decode($rawBody, true)
                     : []
             );
         }
-        return self::getValue(self::$body, $key);
+        return $this->find($this->body, $key);
     }
 
     /**
@@ -105,23 +109,25 @@ final class CommonAsset extends Utility
      * @param string|null $key
      * @return mixed
      */
-    public static function files(string $key = null): mixed
+    public function files(string $key = null): mixed
     {
-        if (!isset(self::$files)) {
+        if (!isset($this->files)) {
             $files = [];
             if (!empty($input = $_FILES)) {
-                self::arrangeFiles($input, $files);
+                $this->arrangeFiles($input, $files);
             }
-            self::$files = new Arrject($files);
+            $this->files = new Arrject($files);
         }
-        return self::getValue(self::$files, $key);
+        return $this->find($this->files, $key);
     }
 
     /**
+     * Arrange files & required properties in order
+     *
      * @param $src
      * @param $files
      */
-    private static function arrangeFiles($src, &$files)
+    private function arrangeFiles($src, &$files): void
     {
         // an array with these keys is a "target" for us (pre-sorted)
         $tgtKeys = ['error', 'name', 'size', 'tmp_name', 'type'];
@@ -150,7 +156,7 @@ final class CommonAsset extends Utility
             // not a target, create sub-elements and init them too
             foreach ($src as $key => $val) {
                 $files[$key] = array();
-                self::arrangeFiles($val, $files[$key]);
+                $this->arrangeFiles($val, $files[$key]);
             }
         }
     }

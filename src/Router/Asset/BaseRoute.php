@@ -3,7 +3,6 @@
 
 namespace AbmmHasan\WebFace\Router\Asset;
 
-
 use AbmmHasan\WebFace\Request\Asset\URL;
 use AbmmHasan\WebFace\Response\Asset\ResponseDepot;
 use Exception;
@@ -52,8 +51,8 @@ abstract class BaseRoute
      */
     public function __construct()
     {
-        Settings::$basePath = URL::get('base');
-        Settings::$cookieDomain = URL::get('host');
+        Settings::$basePath = URL::instance()->get('base');
+        Settings::$cookieDomain = URL::instance()->get('host');
     }
 
     /**
@@ -174,16 +173,17 @@ abstract class BaseRoute
     protected function handle($routes, $method): bool
     {
         // Current Relative URL: remove rewrite base path from it (allows running the router in a subdirectory)
-        $uri = '/' . trim(substr(URL::get('path'), strlen(Settings::$basePath)), '/');
+        $uri = '/' . trim(substr(URL::instance()->get('path'), strlen(Settings::$basePath)), '/');
         $toMatch = $method . ' ' . $uri;
+        $invoke = Invoke::instance();
         // absolute match
         if (isset($routes['plain'][$uri])) {
             RouteDepot::setCurrentRoute($toMatch);
             if (!$this->routeMiddlewareCheck($routes[$uri]['before'] ?? [], $this->globalMiddleware['route'])) {
                 return true;
             }
-            Invoke::method($routes[$uri]['fn']);
-            Invoke::middlewareGroup($routes[$uri]['after'] ?? []);
+            $invoke->method($routes[$uri]['fn']);
+            $invoke->middlewareGroup($routes[$uri]['after'] ?? []);
             return true;
         }
 
@@ -197,8 +197,8 @@ abstract class BaseRoute
                     return true;
                 }
                 unset($matches[0][0]);
-                Invoke::method($route['fn'], array_combine($this->keyMatch, $matches[0]));
-                Invoke::middlewareGroup($route['after'] ?? []);
+                $invoke->method($route['fn'], array_combine($this->keyMatch, $matches[0]));
+                $invoke->middlewareGroup($route['after'] ?? []);
                 return true;
             }
             $this->keyMatch = [];
@@ -258,7 +258,8 @@ abstract class BaseRoute
             if (!isset($collection[$parameterSeparation[0]])) {
                 throw new Exception("Unknown middleware alias: '$parameterSeparation[0]'");
             }
-            $eligible = Invoke::middleware($collection[$parameterSeparation[0]], $parameterSeparation[1] ?? '');
+            $eligible = Invoke::instance()
+                ->middleware($collection[$parameterSeparation[0]], $parameterSeparation[1] ?? '');
             if ($eligible !== true) {
                 ResponseDepot::setStatus($eligible['status'] ?? 403);
                 ResponseDepot::setContent([

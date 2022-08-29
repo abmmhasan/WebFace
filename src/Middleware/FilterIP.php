@@ -4,6 +4,7 @@
 namespace AbmmHasan\WebFace\Middleware;
 
 
+
 use AbmmHasan\WebFace\Request\Asset\CommonAsset;
 use AbmmHasan\WebFace\Request\Asset\EndUser;
 
@@ -19,7 +20,7 @@ class FilterIP
      */
     public function handle(): bool
     {
-        $clientIP = EndUser::ip() ?? CommonAsset::server('REMOTE_ADDR');
+        $clientIP = EndUser::instance()->ip() ?? CommonAsset::instance()->server('REMOTE_ADDR');
         return !empty($clientIP) && !$this->isForbidden($clientIP) && $this->isAllowed($clientIP);
     }
 
@@ -32,7 +33,7 @@ class FilterIP
         if (empty($this->forbidden)) {
             return false;
         }
-        return EndUser::checkIP($this->forbidden, $clientIP);
+        return EndUser::instance()->checkIP($this->forbidden, $clientIP);
     }
 
     /**
@@ -44,7 +45,7 @@ class FilterIP
         if (empty($this->allowed)) {
             return true;
         }
-        return EndUser::checkIP($this->allowed, $clientIP);
+        return EndUser::instance()->checkIP($this->allowed, $clientIP);
     }
 
 }

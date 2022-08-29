@@ -1,19 +1,19 @@
 <?php
 
 
-namespace AbmmHasan\WebFace\Request\Asset;
+namespace AbmmHasan\WebFace\Common;
 
 
-abstract class Utility
+trait Value
 {
     /**
      * @param $asset
      * @param $key
      * @return mixed
      */
-    protected static function getValue($asset, $key): mixed
+    protected function find($asset, $key): mixed
     {
-        if (empty($key)) {
+        if ($key === null) {
             return $asset;
         }
 

@@ -4,7 +4,7 @@
 namespace AbmmHasan\WebFace;
 
 
-use AbmmHasan\WebFace\Request\Asset\URL;
+use AbmmHasan\WebFace\Common\URL;
 use Exception;
 
 /**

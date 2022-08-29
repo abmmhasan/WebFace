@@ -2,12 +2,14 @@
 
 namespace AbmmHasan\WebFace\Router\Asset;
 
+use AbmmHasan\WebFace\Common\StaticSingleInstance;
 use Closure;
 use Exception;
 use function unserialize;
 
 final class Invoke
 {
+    use StaticSingleInstance;
     /**
      * Invoke method
      *
@@ -15,7 +17,7 @@ final class Invoke
      * @param array $params
      * @throws Exception
      */
-    public static function method(array|Closure|string $fn, array $params = []): void
+    public function method(array|Closure|string $fn, array $params = []): void
     {
         ob_start();
         match (true) {
@@ -47,7 +49,7 @@ final class Invoke
      * @return mixed
      * @throws Exception
      */
-    public static function middleware($fn, string $params = ''): mixed
+    public function middleware($fn, string $params = ''): mixed
     {
         $params = array_filter(explode(',', $params));
         if ($fn instanceof Closure) {
@@ -68,11 +70,11 @@ final class Invoke
      * @return void
      * @throws Exception
      */
-    public static function middlewareGroup(array $resource): void
+    public function middlewareGroup(array $resource): void
     {
         if (!empty($resource)) {
             foreach ($resource as $execute) {
-                self::middleware($execute);
+                $this->middleware($execute);
             }
         }
     }

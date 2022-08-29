@@ -1,7 +1,7 @@
 <?php
 
 use AbmmHasan\WebFace\Middleware\PreTag;
-use AbmmHasan\WebFace\Request\Asset\URL;
+use AbmmHasan\WebFace\Common\URL;
 use AbmmHasan\WebFace\Response\Asset\Dispatch;
 use AbmmHasan\WebFace\Response\Response as ResponseAlias;
 use AbmmHasan\WebFace\Router\Asset\RouteDepot;

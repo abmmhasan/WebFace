@@ -175,11 +175,12 @@ class Router extends BaseRoute
         if (php_sapi_name() === 'cli') {
             return true;
         }
-        Invoke::middlewareGroup($this->globalMiddleware['before'] ?? []);
+        $invoke = Invoke::instance();
+        $invoke->middlewareGroup($this->globalMiddleware['before'] ?? []);
         // Handle all routes
         $numHandled = false;
-        $method = URL::getMethod('converted');
-        if (!URL::getMethod('isAjax')) {
+        $method = URL::instance()->getMethod('converted');
+        if (!URL::instance()->getMethod('isAjax')) {
             if (isset($this->routes[$method])) {
                 $numHandled = $this->handle($this->routes[$method], $method);
             }
@@ -194,7 +195,7 @@ class Router extends BaseRoute
         if (!$numHandled) {
             ResponseDepot::setStatus(404);
         }
-        Invoke::middlewareGroup($this->globalMiddleware['after'] ?? []);
+        $invoke->middlewareGroup($this->globalMiddleware['after'] ?? []);
         responseFlush();
         return ResponseDepot::getStatus();
     }

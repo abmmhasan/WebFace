@@ -16,9 +16,10 @@ final class Dispatch
      */
     public function hello(): void
     {
-        Prepare::contentAndCache();
-        Prepare::cacheHeader();
-        $flushable = URL::getMethod('main') !== 'HEAD';
+        $prepare = Prepare::instance();
+        $prepare->contentAndCache();
+        $prepare->cacheHeader();
+        $flushable = URL::instance()->getMethod('main') !== 'HEAD';
         $length = $this->content();
         if (!$flushable && !is_null($length)) {
             ResponseDepot::setHeader('Content-Length', $length, false);
@@ -67,8 +68,9 @@ final class Dispatch
         // Set Cookies (if text type response)
         if ($sendCookie && !!($responseCookies = ResponseDepot::getCookie())) {
             $expire = time() + (Settings::$cookieLifetime * 60);
-            $domain = Settings::$cookieDomain ?? URL::get('host');
-            $secure = Settings::$cookieIsSecure && URL::get('scheme') === 'https';
+            $url = URL::instance();
+            $domain = Settings::$cookieDomain ?? $url->get('host');
+            $secure = Settings::$cookieIsSecure && $url->get('scheme') === 'https';
             foreach ($responseCookies as $name => [$value, $options]) {
                 setcookie($name, $value, [
                     'expires' => $options['expires'] ?? $expire,

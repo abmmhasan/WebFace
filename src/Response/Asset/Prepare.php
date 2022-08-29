@@ -2,6 +2,7 @@
 
 namespace AbmmHasan\WebFace\Response\Asset;
 
+use AbmmHasan\WebFace\Common\StaticSingleInstance;
 use AbmmHasan\WebFace\Request\Asset\Headers;
 use AbmmHasan\WebFace\Request\Asset\URL;
 use AbmmHasan\WebFace\Router\Asset\Settings;
@@ -11,7 +12,7 @@ use JsonSerializable;
 
 final class Prepare
 {
-    private static array $applicableStatus = [
+    private array $applicableStatus = [
         200 => 200,
         203 => 203,
         204 => 204,
@@ -27,7 +28,7 @@ final class Prepare
         501 => 501
     ];
 
-    private static array $applicableSharedStatus = [
+    private array $applicableSharedStatus = [
         200 => 200,
         203 => 203,
         300 => 300,
@@ -36,6 +37,8 @@ final class Prepare
         404 => 404,
         410 => 410
     ];
+
+    use StaticSingleInstance;
 
     /**
      * Preparing cache headers
@@ -47,15 +50,15 @@ final class Prepare
      * @return void
      * @throws Exception
      */
-    public static function cacheHeader(): void
+    public function cacheHeader(): void
     {
         $cache = ResponseDepot::getCache();
-        if (isset(self::$applicableStatus[ResponseDepot::getStatus()]) &&
-            (URL::getMethod('converted') === 'GET' ||
-                (URL::getMethod('converted') === 'POST' && ResponseDepot::getHeader('Content-Location'))
+        if (isset($this->applicableStatus[ResponseDepot::getStatus()]) &&
+            (URL::instance()->getMethod('converted') === 'GET' ||
+                (URL::instance()->getMethod('converted') === 'POST' && ResponseDepot::getHeader('Content-Location'))
             )
         ) {
-            $control = array_values(self::computeCacheControl($cache));
+            $control = array_values($this->computeCacheControl($cache));
             if (!empty($control)) {
                 ResponseDepot::setHeader('Cache-Control', implode(',', $control), false);
             }
@@ -76,22 +79,21 @@ final class Prepare
      * @return void
      * @throws Exception
      */
-    public static function contentAndCache(): void
+    public function contentAndCache(): void
     {
-
-        ResponseDepot::setContent(self::contentParser(ResponseDepot::getContent()));
+        ResponseDepot::setContent($this->contentParser(ResponseDepot::getContent()));
         $contentType = ResponseDepot::getHeader('Content-Type');
-        self::calculateEtag();
+        $this->calculateEtag();
 
-        $isUnmodified = self::notModified();
-        $isEmpty = self::empty();
+        $isUnmodified = $this->notModified();
+        $isEmpty = $this->empty();
         if ($isEmpty || $isUnmodified) {
             return;
         }
 
         // Content-type based on the Request
         if ($contentType === null) {
-            $applicable = array_intersect(ResponseDepot::$applicableFormat, (array)Headers::content('type'));
+            $applicable = array_intersect(ResponseDepot::$applicableFormat, (array)Headers::instance()->content('type'));
             if (!empty($applicable)) {
                 ResponseDepot::setHeader('Content-Type', current($applicable), false);
             } else {
@@ -103,7 +105,7 @@ final class Prepare
         if (ResponseDepot::getStatus() < 400 &&
             (empty($contentType) || !$applicableViaAccept = array_intersect(
                     array_merge($contentType, ['*/*']),
-                    Headers::accept('Accept')
+                    Headers::instance()->accept('Accept')
                 ))
         ) {
             ResponseDepot::setStatus(406);
@@ -121,7 +123,7 @@ final class Prepare
      *
      * @return void
      */
-    private static function calculateEtag(): void
+    private function calculateEtag(): void
     {
         match (ResponseDepot::getCache('ETag')) {
             'W/"auto"' => ResponseDepot::setCache('ETag',
@@ -147,7 +149,7 @@ final class Prepare
      * @return string|bool
      * @throws Exception
      */
-    public static function contentParser($content): string|bool
+    public function contentParser($content): string|bool
     {
         if (
             is_array($content) ||
@@ -170,7 +172,7 @@ final class Prepare
      *
      * @return mixed|string[]
      */
-    private static function computeCacheControl($cache): mixed
+    private function computeCacheControl($cache): mixed
     {
         if (!isset($cache['Cache-Control'])) {
             if (isset($cache['Last-Modified'])) {
@@ -179,7 +181,7 @@ final class Prepare
             return ['private', 'no-cache'];
         }
 
-        if (!self::isSharedCacheable($cache)) {
+        if (!$this->isSharedCacheable($cache)) {
             unset($cache['Cache-Control']['s-maxage']);
         }
 
@@ -202,10 +204,10 @@ final class Prepare
      * @param $cache
      * @return bool
      */
-    private static function isSharedCacheable($cache): bool
+    private function isSharedCacheable($cache): bool
     {
         if (
-            !isset(self::$applicableSharedStatus[ResponseDepot::getStatus()]) ||
+            !isset($this->applicableSharedStatus[ResponseDepot::getStatus()]) ||
             isset($cache['Cache-Control']['no-store']) ||
             isset($cache['Cache-Control']['private'])
         ) {
@@ -227,17 +229,18 @@ final class Prepare
      * @return bool
      * @throws Exception
      */
-    private static function notModified(): bool
+    private function notModified(): bool
     {
         $notModified = false;
-        if (ResponseDepot::getStatus() !== 304 && URL::getMethod('converted') === 'GET') {
+        if (ResponseDepot::getStatus() !== 304 && URL::instance()->getMethod('converted') === 'GET') {
             $cacheHeaders = ResponseDepot::getCache();
             $lastModified = $cacheHeaders['Last-Modified'] ?? null;
-            $modifiedSince = Headers::responseDependency('if_modified_since');
+            $headers = Headers::instance();
+            $modifiedSince = $headers->responseDependency('if_modified_since');
             if ($modifiedSince && $lastModified) {
                 $notModified = strtotime($modifiedSince) >= strtotime($lastModified);
             }
-            if (!$notModified && !empty($noneMatch = Headers::responseDependency('if_none_match'))) {
+            if (!$notModified && !empty($noneMatch = $headers->responseDependency('if_none_match'))) {
                 $notModified = !!array_intersect($noneMatch, [$cacheHeaders['ETag'] ?? '*', '*']);
             }
             if ($notModified) {
@@ -252,7 +255,7 @@ final class Prepare
      *
      * @return bool
      */
-    private static function empty(): bool
+    private function empty(): bool
     {
         $responseCode = ResponseDepot::getStatus();
         if ($responseCode === 304 || $responseCode === 204 || ($responseCode >= 100 && $responseCode < 200)) {

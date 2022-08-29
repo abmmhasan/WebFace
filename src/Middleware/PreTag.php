@@ -83,8 +83,8 @@ class PreTag
         if (!isset($this->asset[$route[1] ?? ''])) {
             return true;
         }
-        $dependencies = Headers::responseDependency();
-        $requestMethod = URL::getMethod('converted');
+        $dependencies = Headers::instance()->responseDependency();
+        $requestMethod = URL::instance()->getMethod('converted');
         if (!empty($dependencies['if_none_match']) &&
             in_array($requestMethod, ['GET', 'HEAD']) &&
             in_array($this->asset[$route[1]], $dependencies['if_none_match'])) {

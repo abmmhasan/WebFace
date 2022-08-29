@@ -2,7 +2,7 @@
 
 namespace AbmmHasan\WebFace\Response;
 
-use AbmmHasan\WebFace\Request\Asset\URL;
+use AbmmHasan\WebFace\Common\URL;
 use AbmmHasan\WebFace\Response\Asset\HTTPResource;
 use AbmmHasan\WebFace\Response\Asset\ResponseDepot;
 use Exception;

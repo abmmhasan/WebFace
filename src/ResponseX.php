@@ -165,7 +165,7 @@ final class ResponseX extends BaseResponse
         foreach (HTTPResource::$cache as $directive => $hasValue) {
             if ($hasValue && isset($options[$directive])) {
                 if ($options[$directive]) {
-                    $controlCache[$directive] = str_replace('_', '-', $directive);
+                    $controlCache[$directive] = strtr($directive, '_', '-');
                     continue;
                 }
                 unset($controlCache[$directive]);

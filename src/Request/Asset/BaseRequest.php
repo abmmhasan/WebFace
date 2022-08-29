@@ -14,18 +14,20 @@ abstract class BaseRequest
     protected string|bool $rawBody;
     protected mixed $parsedBody;
     protected Arrject $request;
+    private CommonAsset $commonAsset;
 
     /**
      * @throws Exception
      */
     public function __construct()
     {
+        $this->commonAsset = CommonAsset::instance();
         // Request assets
-        $this->post = CommonAsset::post();
-        $this->query = CommonAsset::query();
-        $this->files = CommonAsset::files();
-        $this->rawBody = CommonAsset::raw();
-        $this->parsedBody = CommonAsset::parsedBody();
+        $this->post = $this->commonAsset->post();
+        $this->query = $this->commonAsset->query();
+        $this->files = $this->commonAsset->files();
+        $this->rawBody = $this->commonAsset->raw();
+        $this->parsedBody = $this->commonAsset->parsedBody();
         $this->request ??= new Arrject($this->getRequest());
     }
 
@@ -63,17 +65,17 @@ abstract class BaseRequest
             'files' => $this->files,
             'rawBody' => $this->rawBody,
             'parsedBody' => $this->parsedBody,
-            'server' => CommonAsset::server(),
-            'cookie' => CommonAsset::cookie(),
-            'headers' => Headers::all(),
-            'method' => URL::getMethod('converted'),
-            'originalMethod' => URL::getMethod('main'),
-            'contentHeader' => Headers::content(),
-            'accept' => Headers::accept(),
-            'url' => URL::get(),
-            'dependencyHeader' => Headers::responseDependency(),
-            'client' => EndUser::info(),
-            'xhr' => URL::getMethod('isAjax'),
+            'server' => $this->commonAsset->server(),
+            'cookie' => $this->commonAsset->cookie(),
+            'headers' => Headers::instance()->all(),
+            'method' => URL::instance()->getMethod('converted'),
+            'originalMethod' => URL::instance()->getMethod('main'),
+            'contentHeader' => Headers::instance()->content(),
+            'accept' => Headers::instance()->accept(),
+            'url' => URL::instance()->get(),
+            'dependencyHeader' => Headers::instance()->responseDependency(),
+            'client' => EndUser::instance()->info(),
+            'xhr' => URL::instance()->getMethod('isAjax'),
             default => throw new BadMethodCallException("Unknown asset: $name!")
         };
     }

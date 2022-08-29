@@ -5,13 +5,17 @@ namespace AbmmHasan\WebFace\Request\Asset;
 
 
 use AbmmHasan\Bucket\Functional\Arrject;
+use AbmmHasan\WebFace\Common\StaticSingleInstance;
+use AbmmHasan\WebFace\Common\Value;
 use RuntimeException;
 
-final class EndUser extends Utility
+final class EndUser
 {
-    private static array $checkedIps = [];
-    private static string $clientIp;
-    private static Arrject $info;
+    private array $checkedIps = [];
+    private string $clientIp;
+    private Arrject $info;
+
+    use Value, StaticSingleInstance;
 
     /**
      * Get user info
@@ -19,21 +23,22 @@ final class EndUser extends Utility
      * @param string|null $key
      * @return mixed
      */
-    public static function info(string $key = null): mixed
+    public function info(string $key = null): mixed
     {
-        if (!isset(self::$info)) {
-            self::$info = new Arrject([
-                'ip' => CommonAsset::server('REMOTE_ADDR'),
-                'proxy_ip' => self::ip(),
-                'referer' => CommonAsset::server('HTTP_REFERER'),
+        if (!isset($this->info)) {
+            $server = CommonAsset::instance()->server();
+            $this->info = new Arrject([
+                'ip' => $server->server('REMOTE_ADDR'),
+                'proxy_ip' => $this->ip(),
+                'referer' => $server->server('HTTP_REFERER'),
                 'ua' => [
-                    'agent' => CommonAsset::server('HTTP_USER_AGENT'),
-                    'system' => self::userAgentInfo(),
+                    'agent' => $server->server('HTTP_USER_AGENT'),
+                    'system' => $this->userAgentInfo(),
                 ]
             ]);
         }
 
-        return self::getValue(self::$info, $key);
+        return $this->find($this->info, $key);
     }
 
     /**
@@ -41,10 +46,10 @@ final class EndUser extends Utility
      *
      * @return string|null
      */
-    public static function ip(): ?string
+    public function ip(): ?string
     {
-        if (isset(self::$clientIp)) {
-            return self::$clientIp;
+        if (isset($this->clientIp)) {
+            return $this->clientIp;
         }
 
         if (php_sapi_name() == 'cli') {
@@ -52,8 +57,9 @@ final class EndUser extends Utility
             if (!filter_var($ip, FILTER_VALIDATE_IP)) {
                 $ip = '127.0.0.1';
             }
-            return self::$clientIp = $ip;
+            return $this->clientIp = $ip;
         }
+        $server = CommonAsset::instance()->server();
         foreach (
             [
                 'HTTP_CLIENT_IP',
@@ -65,7 +71,8 @@ final class EndUser extends Utility
                 'REMOTE_ADDR'
             ] as $key
         ) {
-            if (($ipAsset = CommonAsset::server($key)) !== null) {
+            $ipAsset = $server[$key] ?? null;
+            if ($ipAsset !== null) {
                 foreach (explode(',', $ipAsset) as $ip) {
                     $ip = trim($ip);
                     if (filter_var(
@@ -73,7 +80,7 @@ final class EndUser extends Utility
                             FILTER_VALIDATE_IP,
                             FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
                         ) !== false) {
-                        return self::$clientIp = $ip;
+                        return $this->clientIp = $ip;
                     }
                 }
             }
@@ -87,17 +94,17 @@ final class EndUser extends Utility
      * @param array|string $ips List of IPs or subnets (can be a string if only a single one)
      * @return bool Whether the ClientIP is valid
      */
-    public static function checkIP(array|string $ips, $checkIP = null): bool
+    public function checkIP(array|string $ips, $checkIP = null): bool
     {
         $ips = (array)$ips;
-        self::ip();
+        $this->ip();
 
-        $check = $checkIP ?? self::$clientIp;
+        $check = $checkIP ?? $this->clientIp;
 
         $method = substr_count($check, ':') > 1 ? 'checkIp6' : 'checkIp4';
 
         foreach ($ips as $ip) {
-            if (self::$method($check, $ip)) {
+            if ($this->$method($check, $ip)) {
                 return true;
             }
         }
@@ -112,7 +119,7 @@ final class EndUser extends Utility
      * @param string $ip
      * @return string
      */
-    public static function anonymize(string $ip): string
+    public function anonymize(string $ip): string
     {
         $wrappedIPv6 = false;
         if (str_starts_with($ip, '[') && str_ends_with($ip, ']')) {
@@ -147,26 +154,26 @@ final class EndUser extends Utility
      *
      * @return bool Whether the request IP matches the IP, or whether the request IP is within the CIDR subnet
      */
-    public static function checkIp4(string $check, string $ip): bool
+    public function checkIp4(string $check, string $ip): bool
     {
         $cacheKey = $check . '-' . $ip;
-        if (isset(self::$checkedIps[$cacheKey])) {
-            return self::$checkedIps[$cacheKey];
+        if (isset($this->checkedIps[$cacheKey])) {
+            return $this->checkedIps[$cacheKey];
         }
 
         if (!filter_var($check, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
-            return self::$checkedIps[$cacheKey] = false;
+            return $this->checkedIps[$cacheKey] = false;
         }
 
         if (str_contains($ip, '/')) {
             [$address, $netmask] = explode('/', $ip, 2);
 
             if ('0' === $netmask) {
-                return self::$checkedIps[$cacheKey] = filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4);
+                return $this->checkedIps[$cacheKey] = filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4);
             }
 
             if ($netmask < 0 || $netmask > 32) {
-                return self::$checkedIps[$cacheKey] = false;
+                return $this->checkedIps[$cacheKey] = false;
             }
         } else {
             $address = $ip;
@@ -174,10 +181,10 @@ final class EndUser extends Utility
         }
 
         if (false === ip2long($address)) {
-            return self::$checkedIps[$cacheKey] = false;
+            return $this->checkedIps[$cacheKey] = false;
         }
 
-        return self::$checkedIps[$cacheKey] = 0 === substr_compare(
+        return $this->checkedIps[$cacheKey] = 0 === substr_compare(
                 sprintf('%032b', ip2long($check)),
                 sprintf('%032b', ip2long($address)),
                 0, $netmask
@@ -196,11 +203,11 @@ final class EndUser extends Utility
      * @see https://github.com/dsp/v6tools
      *
      */
-    public static function checkIp6(string $check, string $ip): bool
+    public function checkIp6(string $check, string $ip): bool
     {
         $cacheKey = $check . '-' . $ip;
-        if (isset(self::$checkedIps[$cacheKey])) {
-            return self::$checkedIps[$cacheKey];
+        if (isset($this->checkedIps[$cacheKey])) {
+            return $this->checkedIps[$cacheKey];
         }
 
         if (!((extension_loaded('sockets') && defined('AF_INET6')) || @inet_pton('::1'))) {
@@ -215,7 +222,7 @@ final class EndUser extends Utility
             }
 
             if ($netmask < 1 || $netmask > 128) {
-                return self::$checkedIps[$cacheKey] = false;
+                return $this->checkedIps[$cacheKey] = false;
             }
         } else {
             $address = $ip;
@@ -226,7 +233,7 @@ final class EndUser extends Utility
         $bytesTest = unpack('n*', @inet_pton($check));
 
         if (!$bytesAddr || !$bytesTest) {
-            return self::$checkedIps[$cacheKey] = false;
+            return $this->checkedIps[$cacheKey] = false;
         }
 
         for ($i = 1, $ceil = ceil($netmask / 16); $i <= $ceil; ++$i) {
@@ -234,14 +241,14 @@ final class EndUser extends Utility
             $left = ($left <= 16) ? $left : 16;
             $mask = ~(0xFFFF >> $left) & 0xFFFF;
             if (($bytesAddr[$i] & $mask) != ($bytesTest[$i] & $mask)) {
-                return self::$checkedIps[$cacheKey] = false;
+                return $this->checkedIps[$cacheKey] = false;
             }
         }
 
-        return self::$checkedIps[$cacheKey] = true;
+        return $this->checkedIps[$cacheKey] = true;
     }
 
-    private static function userAgentInfo(): object|bool|array
+    private function userAgentInfo(): object|bool|array
     {
         if (ini_get('browscap')) {
             return @get_browser(null, true) ?? [];
