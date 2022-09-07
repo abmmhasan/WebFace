@@ -61,7 +61,7 @@ final class Dispatch
 
         header('X-Powered-By: WebFace');
 
-        if ($responseCode >= 400) {
+        if ($responseCode >= 500 || $responseCode === 408) {
             header('Connection: close');
         }
 

@@ -2,7 +2,6 @@
 
 namespace AbmmHasan\WebFace\Router;
 
-use AbmmHasan\WebFace\Request\Asset\URL;
 use AbmmHasan\WebFace\Response\Asset\ResponseDepot;
 use AbmmHasan\WebFace\Router\Asset\BaseRoute;
 use AbmmHasan\WebFace\Router\Asset\Invoke;
@@ -177,24 +176,7 @@ class Router extends BaseRoute
         }
         $invoke = Invoke::instance();
         $invoke->middlewareGroup($this->globalMiddleware['before'] ?? []);
-        // Handle all routes
-        $numHandled = false;
-        $method = URL::instance()->getMethod('converted');
-        if (!URL::instance()->getMethod('isAjax')) {
-            if (isset($this->routes[$method])) {
-                $numHandled = $this->handle($this->routes[$method], $method);
-            }
-            if (!$numHandled && isset($this->routes["ANY"])) {
-                $numHandled = $this->handle($this->routes["ANY"], 'ANY');
-            }
-        } elseif (isset($this->routes["X" . $method])) {
-            $numHandled = $this->handle($this->routes["X" . $method], "X" . $method);
-        }
-
-        // If no route was handled, trigger the 404 (if any)
-        if (!$numHandled) {
-            ResponseDepot::setStatus(404);
-        }
+        $this->handle();
         $invoke->middlewareGroup($this->globalMiddleware['after'] ?? []);
         responseFlush();
         return ResponseDepot::getStatus();

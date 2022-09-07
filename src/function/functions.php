@@ -1,7 +1,7 @@
 <?php
 
 use AbmmHasan\WebFace\Middleware\PreTag;
-use AbmmHasan\WebFace\Common\URL;
+use AbmmHasan\WebFace\Request\Asset\URL;
 use AbmmHasan\WebFace\Response\Asset\Dispatch;
 use AbmmHasan\WebFace\Response\Response as ResponseAlias;
 use AbmmHasan\WebFace\Router\Asset\RouteDepot;
@@ -81,7 +81,7 @@ if (!function_exists('route')) {
     {
         $namedRoutes = RouteDepot::getResource('named');
         if (isset($namedRoutes[$name])) {
-            $url = URL::get('prefix') . trim($namedRoutes[$name][1], '/');
+            $url = URL::instance()->get('prefix') . trim($namedRoutes[$name][1], '/');
             if (!empty($params)) {
                 $url .= '?' . http_build_query($params, $encoding);
             }

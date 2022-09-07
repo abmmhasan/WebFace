@@ -10,6 +10,7 @@ use function unserialize;
 final class Invoke
 {
     use StaticSingleInstance;
+
     /**
      * Invoke method
      *
@@ -31,10 +32,19 @@ final class Invoke
                 ->registerClosure('wf', $fn, $params)
                 ->callClosure('wf'),
 
-            is_string($fn) && str_starts_with($fn, 'C:32:"Opis\\Closure\\SerializableClosure') =>
-            container()
-                ->registerClosure('wf', unserialize($fn)->getClosure(), $params)
-                ->callClosure('wf'),
+            is_string($fn) => match (true) {
+                is_callable($fn, false, $callableName) =>
+                container()
+                    ->registerClosure($callableName, $fn, $params)
+                    ->callClosure($callableName),
+
+                str_starts_with($fn, 'C:32:"Opis\\Closure\\SerializableClosure') =>
+                container()
+                    ->registerClosure('wf', unserialize($fn)->getClosure(), $params)
+                    ->callClosure('wf'),
+
+                default => throw new Exception('Unknown invoke formation!')
+            },
 
             default => throw new Exception('Unknown invoke formation!')
         };
@@ -67,14 +77,15 @@ final class Invoke
      * Execute middleware group
      *
      * @param array $resource
+     * @param string $params
      * @return void
      * @throws Exception
      */
-    public function middlewareGroup(array $resource): void
+    public function middlewareGroup(array $resource, string $params = ''): void
     {
-        if (!empty($resource)) {
+        if ($resource !== []) {
             foreach ($resource as $execute) {
-                $this->middleware($execute);
+                $this->middleware($execute, $params);
             }
         }
     }

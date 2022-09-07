@@ -6,7 +6,6 @@ namespace AbmmHasan\WebFace\Router\Asset;
 use AbmmHasan\WebFace\Request\Asset\URL;
 use AbmmHasan\WebFace\Response\Asset\ResponseDepot;
 use Exception;
-use ReflectionException;
 
 abstract class BaseRoute
 {
@@ -127,7 +126,7 @@ abstract class BaseRoute
         foreach ($methods as $method) {
             $this->routes['named'][$routeInfo['name']] ??= [$method, $pattern];
             $this->routes['list'][] = $pattern;
-            $this->routes[$method][$routeType][$pattern] = $routeInfo;
+            $this->routes[$routeType][$pattern][$method] = $routeInfo;
         }
     }
 
@@ -164,46 +163,65 @@ abstract class BaseRoute
     /**
      * Find and execute exact route
      *
-     * @param $routes
-     * @param $method
      * @return bool
-     * @throws ReflectionException
      * @throws Exception
      */
-    protected function handle($routes, $method): bool
+    protected function handle(): bool
     {
-        // Current Relative URL: remove rewrite base path from it (allows running the router in a subdirectory)
+        // Handle all routes
         $uri = '/' . trim(substr(URL::instance()->get('path'), strlen(Settings::$basePath)), '/');
-        $toMatch = $method . ' ' . $uri;
-        $invoke = Invoke::instance();
-        // absolute match
-        if (isset($routes['plain'][$uri])) {
-            RouteDepot::setCurrentRoute($toMatch);
-            if (!$this->routeMiddlewareCheck($routes[$uri]['before'] ?? [], $this->globalMiddleware['route'])) {
-                return true;
-            }
-            $invoke->method($routes[$uri]['fn']);
-            $invoke->middlewareGroup($routes[$uri]['after'] ?? []);
-            return true;
+        $matched = $this->matchPattern($uri);
+
+        // route exists?
+        if ($matched === null) {
+            ResponseDepot::setStatus(404);
+            goto unhandled;
         }
 
+        // method exists?
+        $method = URL::instance()->getMethod('converted');
+        if (!isset($matched[0][$method]) && !isset($matched[0]['ANY'])) {
+            ResponseDepot::setStatus(405);
+            goto unhandled;
+        }
+
+        $resource = $matched[0][$method] ?? $matched[0]['ANY'];
+        $invoke = Invoke::instance();
+        RouteDepot::setCurrentRoute($method . ' ' . $uri);
+        if (!$this->routeMiddlewareCheck($resource['before'] ?? [], $this->globalMiddleware['route'])) {
+            goto unhandled;
+        }
+        $invoke->method($resource['fn'], $matched[1]);
+        $invoke->middlewareGroup($resource['after'] ?? []);
+        return true;
+
+        unhandled:
+        return false;
+    }
+
+    /**
+     * Match route pattern
+     *
+     * @param string $uri
+     * @return array|null
+     */
+    private function matchPattern(string $uri): ?array
+    {
+        // absolute match
+        if (isset($this->routes['plain'][$uri])) {
+            return [$this->routes['plain'][$uri], []];
+        }
         // pattern match
-        foreach ($routes['pattern'] as $storedPattern => $route) {
+        foreach ($this->routes['pattern'] as $storedPattern => $resource) {
             if (preg_match_all('#^' .
                 preg_replace_callback('/{(.*?)(:.*?)?}/', [$this, 'prepareMatch'], $storedPattern) .
                 '$#u', $uri, $matches, PREG_SET_ORDER)) {
-                RouteDepot::setCurrentRoute($method . ' ' . $storedPattern, $toMatch);
-                if (!$this->routeMiddlewareCheck($route['before'] ?? [], $this->globalMiddleware['route'])) {
-                    return true;
-                }
                 unset($matches[0][0]);
-                $invoke->method($route['fn'], array_combine($this->keyMatch, $matches[0]));
-                $invoke->middlewareGroup($route['after'] ?? []);
-                return true;
+                return [$resource, array_combine($this->keyMatch, $matches[0])];
             }
             $this->keyMatch = [];
         }
-        return false;
+        return null;
     }
 
     /**
@@ -253,13 +271,16 @@ abstract class BaseRoute
         if (empty($check) || empty($collection)) {
             return true;
         }
+        $invoke = Invoke::instance();
         foreach ($check as $middleware) {
             $parameterSeparation = explode(':', $middleware, 2);
             if (!isset($collection[$parameterSeparation[0]])) {
                 throw new Exception("Unknown middleware alias: '$parameterSeparation[0]'");
             }
-            $eligible = Invoke::instance()
-                ->middleware($collection[$parameterSeparation[0]], $parameterSeparation[1] ?? '');
+            $eligible = $invoke->middleware(
+                $collection[$parameterSeparation[0]],
+                $parameterSeparation[1] ?? ''
+            );
             if ($eligible !== true) {
                 ResponseDepot::setStatus($eligible['status'] ?? 403);
                 ResponseDepot::setContent([

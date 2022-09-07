@@ -2,7 +2,7 @@
 
 namespace AbmmHasan\WebFace\Response;
 
-use AbmmHasan\WebFace\Common\URL;
+use AbmmHasan\WebFace\Request\Asset\URL;
 use AbmmHasan\WebFace\Response\Asset\HTTPResource;
 use AbmmHasan\WebFace\Response\Asset\ResponseDepot;
 use Exception;
@@ -212,7 +212,7 @@ class Response
             if (!in_array($options['samesite'], ['Strict', 'Lax', 'None'])) {
                 throw new Exception("Invalid SameSite value!");
             }
-            if ($options['samesite'] === 'None' && URL::get('scheme') !== 'https') {
+            if ($options['samesite'] === 'None' && URL::instance()->get('scheme') !== 'https') {
                 throw new Exception("Cookie with 'SameSite=None' attribute, must use HTTPS protocol!");
             }
         }
