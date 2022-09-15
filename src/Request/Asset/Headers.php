@@ -145,14 +145,14 @@ final class Headers
             $asset = [
                 'if_match' => preg_split(
                     '/\s*,\s*/',
-                    $this->headers['If-Match'] ?? null,
-                    null,
+                    $this->headers['If-Match'] ?? '',
+                    0,
                     PREG_SPLIT_NO_EMPTY
                 ),
                 'if_none_match' => preg_split(
                     '/\s*,\s*/',
-                    $this->headers['If-None-Match'] ?? null,
-                    null,
+                    $this->headers['If-None-Match'] ?? '',
+                    0,
                     PREG_SPLIT_NO_EMPTY
                 ),
                 'if_modified_since' => !empty($this->headers['If-Modified-Since']) ?

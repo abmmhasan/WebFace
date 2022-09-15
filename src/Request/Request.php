@@ -23,7 +23,7 @@ use Exception;
  * @method post(string $key = null) Get post content
  * @method query(string $key = null) Get query params
  * @method files(string $key = null) Get uploaded file(s)
- * @method rawBody() Get raw input (Not available with enctype="multipart/form-data")
+ * @method rawBody() Get raw input (Not available with enctype = "multipart/form-data")
  * @method parsedBody(string $key = null) Get parsed body by Content Type
  */
 class Request extends BaseRequest

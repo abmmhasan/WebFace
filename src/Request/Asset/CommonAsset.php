@@ -95,7 +95,7 @@ final class CommonAsset
             $type = Headers::instance()->content('type');
             $this->body = new Arrject(
                 ($type === 'application/json' ||
-                    preg_match_all('/^application\/(.+\+)?json$/', $type) === 1)
+                    preg_match_all('/^application\/(.+\+)?json$/', $type ?? '') === 1)
                     ? json_decode($rawBody, true)
                     : []
             );

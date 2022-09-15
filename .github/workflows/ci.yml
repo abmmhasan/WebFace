@@ -1,14 +1,14 @@
 name: "build"
 
-on: ["pull_request", "push"]
+on: [ "pull_request", "push" ]
 
 jobs:
   run:
     runs-on: ${{ matrix.operating-system }}
     strategy:
       matrix:
-        operating-system: [ubuntu-latest, windows-latest, macOS-latest]
-        php-versions: ['8.0', '8.1']
+        operating-system: [ ubuntu-latest, windows-latest, macOS-latest ]
+        php-versions: [ '8.0', '8.1' ]
     name: PHP ${{ matrix.php-versions }} Test on ${{ matrix.operating-system }}
     steps:
       - name: Checkout
