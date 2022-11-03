@@ -5,8 +5,7 @@ namespace AbmmHasan\WebFace\Request\Asset;
 
 
 use AbmmHasan\Bucket\Functional\Arrject;
-use AbmmHasan\WebFace\Common\StaticSingleInstance;
-use AbmmHasan\WebFace\Common\Value;
+use AbmmHasan\OOF\Fence\Single;
 use Exception;
 
 final class URL
@@ -15,13 +14,14 @@ final class URL
     private Arrject $method;
     private array $methods = ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH'];
 
-    use Value, StaticSingleInstance;
+    use Value, Single;
 
     /**
      * Get current URL (parsed)
      *
      * @param string|null $key
      * @return mixed
+     * @throws Exception
      */
     public function get(string $key = null): mixed
     {

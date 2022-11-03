@@ -1,7 +1,7 @@
 <?php
 
 
-namespace AbmmHasan\WebFace\Common;
+namespace AbmmHasan\WebFace\Request\Asset;
 
 
 trait Value

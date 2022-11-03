@@ -11,6 +11,12 @@ class FilterIP
 {
     protected array $allowed = [];
     protected array $forbidden = [];
+    private string $clientIP;
+
+    public function __construct()
+    {
+        $this->clientIP = EndUser::instance()->ip() ?? CommonAsset::instance()->server('REMOTE_ADDR');
+    }
 
     /**
      * Checks if Client IP is eligible or not!
@@ -19,32 +25,30 @@ class FilterIP
      */
     public function handle(): bool
     {
-        $clientIP = EndUser::instance()->ip() ?? CommonAsset::instance()->server('REMOTE_ADDR');
-        return !empty($clientIP) && !$this->isForbidden($clientIP) && $this->isAllowed($clientIP);
+
+        return !empty($this->clientIP) && !$this->isForbidden() && $this->isAllowed();
     }
 
     /**
-     * @param $clientIP
      * @return bool
      */
-    private function isForbidden($clientIP): bool
+    private function isForbidden(): bool
     {
         if (empty($this->forbidden)) {
             return false;
         }
-        return EndUser::instance()->checkIP($this->forbidden, $clientIP);
+        return EndUser::instance()->checkIP($this->forbidden, $this->clientIP);
     }
 
     /**
-     * @param $clientIP
      * @return bool
      */
-    private function isAllowed($clientIP): bool
+    private function isAllowed(): bool
     {
         if (empty($this->allowed)) {
             return true;
         }
-        return EndUser::instance()->checkIP($this->allowed, $clientIP);
+        return EndUser::instance()->checkIP($this->allowed, $this->clientIP);
     }
 
 }

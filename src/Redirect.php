@@ -3,8 +3,7 @@
 
 namespace AbmmHasan\WebFace;
 
-
-use AbmmHasan\WebFace\Common\URL;
+use AbmmHasan\WebFace\Request\Asset\URL;
 use Exception;
 
 /**
@@ -25,7 +24,7 @@ final class Redirect
      */
     public static function __callStatic(string $response_type = 'to', array $parameters = [])
     {
-        $available = match (URL::getMethod('converted')) {
+        $available = match (URL::instance()->getMethod('converted')) {
             'GET' => [
                 // Permanent redirection
                 'moved' => 301, // link moved permanently (indicates reorganization)

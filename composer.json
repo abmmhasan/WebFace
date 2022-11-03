@@ -31,6 +31,7 @@
     "abmmhasan/oof": "dev-main",
     "abmmhasan/bucket": "dev-main",
     "opis/json-schema": "^2.3",
-    "opis/closure": "^3.6"
+    "opis/closure": "^3.6",
+    "abmmhasan/uuid": "^1.0"
   }
 }

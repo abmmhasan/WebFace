@@ -43,7 +43,8 @@ final class Dispatch
         // Set Status Header
         $responseCode = ResponseDepot::getStatus();
         header(
-            "HTTP/" . HTTPResource::$responseVersion . " $responseCode " . HTTPResource::$statusList[$responseCode],
+            "HTTP/" . HTTPResource::$responseVersion .
+            " $responseCode " . HTTPResource::$statusList[$responseCode][0],
             true,
             $responseCode
         );

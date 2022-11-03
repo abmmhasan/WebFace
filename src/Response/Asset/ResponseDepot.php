@@ -78,6 +78,21 @@ final class ResponseDepot
     }
 
     /**
+     * Force status
+     *
+     * @param int $code
+     * @return void
+     */
+    public static function forceResponse(int $code): void
+    {
+        if (!isset(HTTPResource::$statusList[$code])) {
+            throw new InvalidArgumentException("Invalid status code {$code}!");
+        }
+        self::$code = $code;
+        self::$content = HTTPResource::$statusList[$code][1];
+    }
+
+    /**
      * Get header
      *
      * @param $label

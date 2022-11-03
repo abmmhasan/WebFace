@@ -3,8 +3,8 @@
 namespace AbmmHasan\WebFace\Request\Asset;
 
 use AbmmHasan\Bucket\Functional\Arrject;
-use AbmmHasan\WebFace\Common\StaticSingleInstance;
-use AbmmHasan\WebFace\Common\Value;
+use AbmmHasan\OOF\Fence\Single;
+use Exception;
 
 final class Headers
 {
@@ -13,13 +13,14 @@ final class Headers
     private Arrject $content;
     private Arrject $dependency;
 
-    use Value, StaticSingleInstance;
+    use Value, Single;
 
     /**
      * Get all HTTP headers
      *
      * @param string|null $key
      * @return mixed
+     * @throws Exception
      */
     public function all(string $key = null): mixed
     {
@@ -83,6 +84,7 @@ final class Headers
      *
      * @param string|null $key
      * @return mixed
+     * @throws Exception
      */
     public function accept(string $key = null): mixed
     {
@@ -104,6 +106,7 @@ final class Headers
      *
      * @param string|null $key
      * @return mixed
+     * @throws Exception
      */
     public function content(string $key = null): mixed
     {
@@ -137,6 +140,7 @@ final class Headers
      *
      * @param string|null $key
      * @return mixed
+     * @throws Exception
      */
     public function responseDependency(string $key = null): mixed
     {

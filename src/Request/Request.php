@@ -14,7 +14,7 @@ use Exception;
  * @method headers(string $key = null) Get HTTP headers
  * @method method() Get request method (converted)
  * @method originalMethod() Get request method (original)
- * @method contentHeader(string $key = null) Get parsed content headers
+ * @method contentHeader(string $key = null) Get parsed Content headers
  * @method accept(string $key = null) Get parsed Accept headers
  * @method url(string $key = null) Get current URL (parsed)
  * @method dependencyHeader(string $key = null) Get response dependency

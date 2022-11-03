@@ -2,14 +2,14 @@
 
 namespace AbmmHasan\WebFace\Router\Asset;
 
-use AbmmHasan\WebFace\Common\StaticSingleInstance;
+use AbmmHasan\OOF\Fence\Single;
 use Closure;
 use Exception;
 use function unserialize;
 
 final class Invoke
 {
-    use StaticSingleInstance;
+    use Single;
 
     /**
      * Invoke method

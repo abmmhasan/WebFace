@@ -14,13 +14,17 @@ class PreTag
 {
     private array $asset;
 
+    public function __construct()
+    {
+        $this->loadAsset();
+    }
+
     /**
      * @return array|bool
      * @throws Exception
      */
     public function handle(): array|bool
     {
-        $this->loadAsset();
         return $this->compareDependency();
     }
 
@@ -37,7 +41,6 @@ class PreTag
         if (empty(Settings::$preTagFileLocation)) {
             throw new Exception("PreTag file location not defined!");
         }
-        $this->loadAsset();
         $this->setByPath($path, $tag);
         if (!empty($this->asset)) {
             return file_put_contents(Settings::$preTagFileLocation, json_encode($this->asset), LOCK_EX);

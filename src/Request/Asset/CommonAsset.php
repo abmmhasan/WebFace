@@ -4,8 +4,10 @@
 namespace AbmmHasan\WebFace\Request\Asset;
 
 use AbmmHasan\Bucket\Functional\Arrject;
-use AbmmHasan\WebFace\Common\StaticSingleInstance;
-use AbmmHasan\WebFace\Common\Value;
+use AbmmHasan\OOF\Fence\Single;
+use AbmmHasan\WebFace\Response\Asset\HTTPResource;
+use AbmmHasan\WebFace\Response\Asset\ResponseDepot;
+use Exception;
 
 final class CommonAsset
 {
@@ -17,7 +19,7 @@ final class CommonAsset
     private Arrject $body;
     private string $raw;
 
-    use Value, StaticSingleInstance;
+    use Value, Single;
 
     /**
      * Get Server Info
@@ -75,6 +77,7 @@ final class CommonAsset
      * Get raw input (Not available with enctype="multipart/form-data")
      *
      * @return string|bool
+     * @throws Exception
      */
     public function raw(): string|bool
     {
@@ -88,17 +91,24 @@ final class CommonAsset
      *
      * @param string|null $key
      * @return mixed
+     * @throws Exception
      */
     public function parsedBody(string $key = null): mixed
     {
         if (!isset($this->body) && ($rawBody = $this->raw()) !== false) {
             $type = Headers::instance()->content('type');
-            $this->body = new Arrject(
-                ($type === 'application/json' ||
-                    preg_match_all('/^application\/(.+\+)?json$/', $type ?? '') === 1)
-                    ? json_decode($rawBody, true)
-                    : []
-            );
+            $body = [];
+            if ($type === 'application/json' ||
+                preg_match_all('/^application\/(.+\+)?json$/', $type ?? '') === 1) {
+                $body = json_decode($rawBody, true);
+            }
+            if ($body === null) {
+                ResponseDepot::setStatus(415);
+                ResponseDepot::setContent(HTTPResource::$statusList[]);
+                responseFlush();
+                return null;
+            }
+            $this->body = new Arrject($body);
         }
         return $this->find($this->body, $key);
     }

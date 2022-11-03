@@ -11,10 +11,13 @@ abstract class BaseRequest
     protected Arrject $post;
     protected Arrject $query;
     protected Arrject $files;
-    protected string|bool $rawBody;
     protected mixed $parsedBody;
     protected Arrject $request;
     private CommonAsset $commonAsset;
+    private array $queryOnly = [
+        'GET' => 'GET',
+        'DELETE' => 'DELETE'
+    ];
 
     /**
      * @throws Exception
@@ -23,11 +26,9 @@ abstract class BaseRequest
     {
         $this->commonAsset = CommonAsset::instance();
         // Request assets
-        $this->post = $this->commonAsset->post();
         $this->query = $this->commonAsset->query();
+        $this->post = $this->commonAsset->post();
         $this->files = $this->commonAsset->files();
-        $this->rawBody = $this->commonAsset->raw();
-        $this->parsedBody = $this->commonAsset->parsedBody();
         $this->request ??= new Arrject($this->getRequest());
     }
 
@@ -40,14 +41,14 @@ abstract class BaseRequest
      */
     protected function getRequest(): array
     {
-        return in_array($this->getAsset('method'), ['GET', 'DELETE'])
-            ? $this->query->toArray()
-            : (
-                (!$this->parsedBody ? [] : $this->parsedBody->toArray()) +
-                $this->post->toArray() +
-                $this->files->toArray() +
-                $this->query->toArray()
-            );
+        if (isset($this->queryOnly[$this->getAsset('method')])) {
+            return $this->query->toArray();
+        }
+        $this->parsedBody = $this->commonAsset->parsedBody();
+        return (!$this->parsedBody ? [] : $this->parsedBody->toArray()) +
+            $this->post->toArray() +
+            $this->files->toArray() +
+            $this->query->toArray();
     }
 
     /**
@@ -60,10 +61,10 @@ abstract class BaseRequest
     protected function getAsset($name): mixed
     {
         return match ($name) {
-            'post' => $this->post,
             'query' => $this->query,
+            'post' => $this->post,
             'files' => $this->files,
-            'rawBody' => $this->rawBody,
+            'rawBody' => $this->commonAsset->raw(),
             'parsedBody' => $this->parsedBody,
             'server' => $this->commonAsset->server(),
             'cookie' => $this->commonAsset->cookie(),

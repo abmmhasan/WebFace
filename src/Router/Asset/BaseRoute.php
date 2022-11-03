@@ -4,6 +4,7 @@
 namespace AbmmHasan\WebFace\Router\Asset;
 
 use AbmmHasan\WebFace\Request\Asset\URL;
+use AbmmHasan\WebFace\Response\Asset\HTTPResource;
 use AbmmHasan\WebFace\Response\Asset\ResponseDepot;
 use Exception;
 
@@ -26,11 +27,6 @@ abstract class BaseRoute
         'OPTIONS',
         'PATCH',
         'ANY',
-        'XGET',
-        'XPOST',
-        'XPUT',
-        'XDELETE',
-        'XPATCH',
         'VIEW'
     ];
     public bool $cacheLoaded = false;
@@ -168,7 +164,11 @@ abstract class BaseRoute
      */
     protected function handle(): bool
     {
-        // Handle all routes
+        if (ResponseDepot::getStatus() >= 300) {
+            goto unhandled;
+        }
+
+        // Handle all routes (get URI after base rewrite, handles sub-directory)
         $uri = '/' . trim(substr(URL::instance()->get('path'), strlen(Settings::$basePath)), '/');
         $matched = $this->matchPattern($uri);
 
@@ -282,10 +282,11 @@ abstract class BaseRoute
                 $parameterSeparation[1] ?? ''
             );
             if ($eligible !== true) {
-                ResponseDepot::setStatus($eligible['status'] ?? 403);
+                $status = $eligible['status'] ?? 403;
+                ResponseDepot::setStatus($status);
                 ResponseDepot::setContent([
                     'status' => 'failed',
-                    'message' => $eligible['message'] ?? (is_string($eligible) ? $eligible : 'Bad Request')
+                    'message' => $eligible['message'] ?? HTTPResource::$statusList[$status][1]
                 ]);
                 return false;
             }

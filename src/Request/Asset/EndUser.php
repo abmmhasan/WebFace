@@ -5,8 +5,8 @@ namespace AbmmHasan\WebFace\Request\Asset;
 
 
 use AbmmHasan\Bucket\Functional\Arrject;
-use AbmmHasan\WebFace\Common\StaticSingleInstance;
-use AbmmHasan\WebFace\Common\Value;
+use AbmmHasan\OOF\Fence\Single;
+use Exception;
 use RuntimeException;
 
 final class EndUser
@@ -15,13 +15,14 @@ final class EndUser
     private string $clientIp;
     private Arrject $info;
 
-    use Value, StaticSingleInstance;
+    use Value, Single;
 
     /**
      * Get user info
      *
      * @param string|null $key
      * @return mixed
+     * @throws Exception
      */
     public function info(string $key = null): mixed
     {
@@ -45,6 +46,7 @@ final class EndUser
      * Get Client IP
      *
      * @return string|null
+     * @throws Exception
      */
     public function ip(): ?string
     {
@@ -93,6 +95,7 @@ final class EndUser
      *
      * @param array|string $ips List of IPs or subnets (can be a string if only a single one)
      * @return bool Whether the ClientIP is valid
+     * @throws Exception
      */
     public function checkIP(array|string $ips, $checkIP = null): bool
     {

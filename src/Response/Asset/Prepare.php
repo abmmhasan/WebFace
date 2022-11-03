@@ -2,7 +2,7 @@
 
 namespace AbmmHasan\WebFace\Response\Asset;
 
-use AbmmHasan\WebFace\Common\StaticSingleInstance;
+use AbmmHasan\OOF\Fence\Single;
 use AbmmHasan\WebFace\Request\Asset\Headers;
 use AbmmHasan\WebFace\Request\Asset\URL;
 use AbmmHasan\WebFace\Router\Asset\Settings;
@@ -28,6 +28,16 @@ final class Prepare
         501 => 501
     ];
 
+    private array $noContentEligible = [
+        100 => 100,
+        101 => 101,
+        102 => 102,
+        103 => 103,
+        204 => 204,
+        205 => 205,
+        304 => 304,
+    ];
+
     private array $applicableSharedStatus = [
         200 => 200,
         203 => 203,
@@ -38,7 +48,7 @@ final class Prepare
         410 => 410
     ];
 
-    use StaticSingleInstance;
+    use Single;
 
     /**
      * Preparing cache headers
@@ -109,7 +119,6 @@ final class Prepare
                 ))
         ) {
             ResponseDepot::setStatus(406);
-            ResponseDepot::setContent('');
         }
 
         // Fix Content-Length; ToDo: WIP
@@ -258,7 +267,7 @@ final class Prepare
     private function empty(): bool
     {
         $responseCode = ResponseDepot::getStatus();
-        if ($responseCode === 304 || $responseCode === 204 || ($responseCode >= 100 && $responseCode < 200)) {
+        if (isset($this->noContentEligible[$responseCode])) {
             ResponseDepot::setContent('');
             ResponseDepot::setHeader('Content-Type', '', false);
             ResponseDepot::setHeader('Content-Length', '', false);
