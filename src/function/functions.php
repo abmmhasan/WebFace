@@ -4,7 +4,7 @@ use AbmmHasan\WebFace\Middleware\PreTag;
 use AbmmHasan\WebFace\Request\Asset\URL;
 use AbmmHasan\WebFace\Response\Asset\Dispatch;
 use AbmmHasan\WebFace\Response\Response as ResponseAlias;
-use AbmmHasan\WebFace\Router\Asset\RouteDepot;
+use AbmmHasan\WebFace\Router\Asset\Depository;
 use AbmmHasan\WebFace\Router\Asset\Settings;
 use AbmmHasan\WebFace\Router\Router;
 
@@ -26,9 +26,9 @@ if (!function_exists('response')) {
      *
      * @throws Exception
      */
-    function response(string|array $content = null, int $status = 200, array $headers = []): ResponseAlias
+    function response(): ResponseAlias
     {
-        return ResponseAlias::instance($content, $status, $headers);
+        return ResponseAlias::instance();
     }
 }
 
@@ -63,7 +63,6 @@ if (!function_exists('webFace')) {
                 require_once($filename);
             }
         }
-        RouteDepot::setResource($router->getRoutes());
         return $router;
     }
 }
@@ -76,10 +75,12 @@ if (!function_exists('route')) {
      * @param array|object|null $params
      * @param int $encoding
      * @return array|null
+     * @throws Exception
      */
     function route(string $name, array|object $params = null, int $encoding = PHP_QUERY_RFC3986): ?array
     {
-        $namedRoutes = RouteDepot::getResource('named');
+        $namedRoutes = Depository::instance()
+            ->getResource('named');
         if (isset($namedRoutes[$name])) {
             $url = URL::instance()->get('prefix') . trim($namedRoutes[$name][1], '/');
             if (!empty($params)) {
@@ -112,7 +113,7 @@ if (!function_exists('httpDate')) {
 
         try {
             $date->setTimeZone(new DateTimeZone('UTC'));
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $date = new DateTime('0001-01-01', new DateTimeZone('UTC'));
         } finally {
             return $date->format('D, d M Y H:i:s') . ' GMT';

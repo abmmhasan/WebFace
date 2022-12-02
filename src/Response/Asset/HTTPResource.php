@@ -61,7 +61,7 @@ final class HTTPResource
         409 => ['Conflict', 'Unable to fulfill the request due to resource conflict'],
         410 => ['Gone', 'The requested resource is gone and won’t be coming back'],
         411 => ['Length Required', 'Unspecified length'],
-        412 => ['Precondition Failed', 'Requested condition does\'t meet the server requirement'],
+        412 => ['Precondition Failed', 'Requested condition doesn\'t meet the server requirement'],
         413 => ['Request Entity Too Large', 'Request body is larger than expected'],
         414 => ['Request-URI Too Long', 'The URI(encoded) is too large to process'],
         415 => ['Unsupported Media Type', 'Provided media type is invalid!'],

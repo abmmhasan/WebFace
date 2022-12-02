@@ -9,7 +9,7 @@ if (php_sapi_name() !== 'cli') {
 require_once(realpath('./vendor/autoload.php'));
 $written = RouteDepot::cache();
 if ($written) {
-    echo "Route cached successfully ({$written} Bytes written)!";
+    echo "Route cached successfully ($written Bytes written)!";
 } else {
     echo "Caching failed";
 }

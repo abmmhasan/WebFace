@@ -7,6 +7,13 @@ namespace AbmmHasan\WebFace\Router\Asset;
 final class Settings
 {
     /**
+     * Route node (indicates server identity; if multiple server)
+     *
+     * @var string|null
+     */
+    public static ?string $node = null;
+
+    /**
      * If the route is running from Sub-folder
      *
      * @var string|null

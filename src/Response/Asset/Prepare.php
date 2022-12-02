@@ -5,13 +5,17 @@ namespace AbmmHasan\WebFace\Response\Asset;
 use AbmmHasan\OOF\Fence\Single;
 use AbmmHasan\WebFace\Request\Asset\Headers;
 use AbmmHasan\WebFace\Request\Asset\URL;
+use AbmmHasan\WebFace\Response\Response;
 use AbmmHasan\WebFace\Router\Asset\Settings;
-use ArrayObject;
 use Exception;
-use JsonSerializable;
 
 final class Prepare
 {
+    use Single;
+
+    private Repository $repository;
+    private Response $response;
+
     private array $applicableStatus = [
         200 => 200,
         203 => 203,
@@ -48,7 +52,14 @@ final class Prepare
         410 => 410
     ];
 
-    use Single;
+    /**
+     * @throws Exception
+     */
+    public function __construct()
+    {
+        $this->repository = Repository::instance();
+        $this->response = Response::instance();
+    }
 
     /**
      * Preparing cache headers
@@ -62,21 +73,21 @@ final class Prepare
      */
     public function cacheHeader(): void
     {
-        $cache = ResponseDepot::getCache();
-        if (isset($this->applicableStatus[ResponseDepot::getStatus()]) &&
+        $cache = $this->repository->getCache();
+        if (isset($this->applicableStatus[$this->repository->getStatus()]) &&
             (URL::instance()->getMethod('converted') === 'GET' ||
-                (URL::instance()->getMethod('converted') === 'POST' && ResponseDepot::getHeader('Content-Location'))
+                (URL::instance()->getMethod('converted') === 'POST' && $this->repository->getHeader('Content-Location'))
             )
         ) {
             $control = array_values($this->computeCacheControl($cache));
             if (!empty($control)) {
-                ResponseDepot::setHeader('Cache-Control', implode(',', $control), false);
+                $this->response->header('Cache-Control', implode(',', $control), false);
             }
         }
         unset($cache['Cache-Control']);
         if (!empty($cache)) {
             foreach ($cache as $label => $value) {
-                ResponseDepot::setHeader($label, implode(',', (array)$value), false);
+                $this->response->header($label, implode(',', (array)$value), false);
             }
         }
     }
@@ -91,60 +102,68 @@ final class Prepare
      */
     public function contentAndCache(): void
     {
-        ResponseDepot::setContent($this->contentParser(ResponseDepot::getContent()));
-        $contentType = ResponseDepot::getHeader('Content-Type');
-        $this->calculateEtag();
+        $content = $this->contentParser($this->repository->getContent());
 
-        $isUnmodified = $this->notModified();
-        $isEmpty = $this->empty();
-        if ($isEmpty || $isUnmodified) {
-            return;
-        }
-
-        // Content-type based on the Request
+        // check & set content type
+        $contentType = $this->repository->getHeader('Content-Type');
         if ($contentType === null) {
-            $applicable = array_intersect(ResponseDepot::$applicableFormat, (array)Headers::instance()->content('type'));
+//            $applicable = array_intersect(ResponseDepot::$applicableFormat, (array)Headers::instance()->content('type'));
             if (!empty($applicable)) {
-                ResponseDepot::setHeader('Content-Type', current($applicable), false);
+                $this->response->header('Content-Type', current($applicable), false);
             } else {
-                $charset = ResponseDepot::$charset ?? 'UTF-8';
-                ResponseDepot::setHeader('Content-Type', 'text/html; charset=' . $charset, false);
+                $charset = $this->repository->getCharset() ?? 'UTF-8';
+                $this->response->header('Content-Type', 'text/html; charset=' . $charset, false);
             }
         }
 
-        if (ResponseDepot::getStatus() < 400 &&
-            (empty($contentType) || !$applicableViaAccept = array_intersect(
+        if ($this->repository->getStatus() < 300 &&
+            (empty($contentType) || !array_intersect(
                     array_merge($contentType, ['*/*']),
                     Headers::instance()->accept('Accept')
                 ))
         ) {
-            ResponseDepot::setStatus(406);
+            $this->response
+                ->status(406)
+                ->fail();
+            $this->repository->setRawContent(
+                $this->contentParser($this->repository->getContent())
+            );
+            return;
         }
 
-        // Fix Content-Length; ToDo: WIP
-        if (isset($setHeaders['Transfer-Encoding'])) {
-            ResponseDepot::setHeader('Content-Length', '', false);
+        $this->calculateEtag($content);
+        $this->shouldMarkAsModified();
+        if ($this->empty()) {
+            return;
         }
+
+        $this->repository->setRawContent($content);
+
+        // Fix Content-Length; ToDo: WIP
+//        if (isset($setHeaders['Transfer-Encoding'])) {
+//            $this->response->header('Content-Length', '', false);
+//        }
     }
 
     /**
      * Calculate Etag
      *
+     * @param string|null $content
      * @return void
      */
-    private function calculateEtag(): void
+    private function calculateEtag(string $content = null): void
     {
-        match (ResponseDepot::getCache('ETag')) {
-            'W/"auto"' => ResponseDepot::setCache('ETag',
+        match ($this->repository->getCache('ETag')) {
+            'W/"auto"' => $this->repository->setCache('ETag',
                 'W/"' . hash(
                     Settings::$weakEtagMethod,
-                    ResponseDepot::getContent()
+                    $content ?? $this->repository->getContent()
                 ) . '"'
             ),
-            '"auto"' => ResponseDepot::setCache('ETag',
+            '"auto"' => $this->repository->setCache('ETag',
                 '"' . hash(
                     Settings::$etagMethod,
-                    json_encode(ResponseDepot::getHeader()) . ';' . ResponseDepot::getContent()
+                    $content ?? (json_encode($this->repository->getHeader()) . $this->repository->getContent())
                 ) . '"'
             ),
             default => null
@@ -160,13 +179,14 @@ final class Prepare
      */
     public function contentParser($content): string|bool
     {
-        if (
-            is_array($content) ||
-            $content instanceof JsonSerializable ||
-            $content instanceof ArrayObject
-        ) {
-            ResponseDepot::setHeader('Content-Type', 'application/json', false);
-            return json_encode($content, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+        if ($this->repository->getType() === 'json') {
+            if (!is_array($content)) {
+                throw new Exception('Host response is not JSON compatible!');
+            }
+            $this->response->header('Content-Type', $this->repository->getMime(), false);
+            $content['message'] ??= HTTPResource::$statusList[$this->repository->getStatus()][1];
+            return json_encode($content, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) ?:
+                throw new Exception('Unable to parse response as JSON(' . json_last_error_msg() . ')');
         }
         if (!is_string($content)) {
             throw new Exception('Unable to parse content');
@@ -216,7 +236,7 @@ final class Prepare
     private function isSharedCacheable($cache): bool
     {
         if (
-            !isset($this->applicableSharedStatus[ResponseDepot::getStatus()]) ||
+            !isset($this->applicableSharedStatus[$this->repository->getStatus()]) ||
             isset($cache['Cache-Control']['no-store']) ||
             isset($cache['Cache-Control']['private'])
         ) {
@@ -238,11 +258,11 @@ final class Prepare
      * @return bool
      * @throws Exception
      */
-    private function notModified(): bool
+    private function shouldMarkAsModified(): bool
     {
         $notModified = false;
-        if (ResponseDepot::getStatus() !== 304 && URL::instance()->getMethod('converted') === 'GET') {
-            $cacheHeaders = ResponseDepot::getCache();
+        if ($this->repository->getStatus() !== 304 && URL::instance()->getMethod('converted') === 'GET') {
+            $cacheHeaders = $this->repository->getCache();
             $lastModified = $cacheHeaders['Last-Modified'] ?? null;
             $headers = Headers::instance();
             $modifiedSince = $headers->responseDependency('if_modified_since');
@@ -253,7 +273,7 @@ final class Prepare
                 $notModified = !!array_intersect($noneMatch, [$cacheHeaders['ETag'] ?? '*', '*']);
             }
             if ($notModified) {
-                ResponseDepot::setStatus(304);
+                $this->repository->setStatus(304);
             }
         }
         return $notModified;
@@ -266,11 +286,11 @@ final class Prepare
      */
     private function empty(): bool
     {
-        $responseCode = ResponseDepot::getStatus();
+        $responseCode = $this->repository->getStatus();
         if (isset($this->noContentEligible[$responseCode])) {
-            ResponseDepot::setContent('');
-            ResponseDepot::setHeader('Content-Type', '', false);
-            ResponseDepot::setHeader('Content-Length', '', false);
+            $this->repository->setRawContent();
+            $this->response->header('Content-Type', '', false);
+            $this->response->header('Content-Length', '', false);
             ini_set('default_mimetype', '');
             if ($responseCode === 304) {
                 foreach (
@@ -282,7 +302,7 @@ final class Prepare
                         'Last-Modified'
                     ] as $header
                 ) {
-                    ResponseDepot::setHeader($header, null, false);
+                    $this->response->header($header, null, false);
                 }
             }
             return true;

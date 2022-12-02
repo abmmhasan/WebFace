@@ -2,7 +2,7 @@
 
 namespace AbmmHasan\WebFace\Router;
 
-use AbmmHasan\WebFace\Response\Asset\ResponseDepot;
+use AbmmHasan\WebFace\Response\Asset\Repository;
 use AbmmHasan\WebFace\Router\Asset\BaseRoute;
 use AbmmHasan\WebFace\Router\Asset\Invoke;
 use AbmmHasan\WebFace\Router\Asset\Settings;
@@ -20,6 +20,7 @@ class Router extends BaseRoute
     /**
      * Router constructor.
      *
+     * @throws Exception
      */
     public function __construct()
     {
@@ -91,7 +92,7 @@ class Router extends BaseRoute
      *
      * @param $method
      * @param $params
-     * @return bool|void
+     * @return bool
      * @throws Exception
      */
     public function __call($method, $params)
@@ -102,7 +103,7 @@ class Router extends BaseRoute
         if (empty($params) || count($params) !== 2) {
             return false;
         }
-        $this->match([strtoupper($method)], $params[0], $params[1]);
+        return $this->match([strtoupper($method)], $params[0], $params[1]);
     }
 
     /**
@@ -176,10 +177,13 @@ class Router extends BaseRoute
         }
         $invoke = Invoke::instance();
         $invoke->middlewareGroup($this->globalMiddleware['before'] ?? []);
-        $this->handle();
+        $repository = Repository::instance();
+        if ($repository->getStatus() === 200) {
+            $this->handle();
+        }
         $invoke->middlewareGroup($this->globalMiddleware['after'] ?? []);
         responseFlush();
-        return ResponseDepot::getStatus();
+        return $repository->getStatus();
     }
 
     /**
@@ -190,5 +194,17 @@ class Router extends BaseRoute
     public function getRoutes(): array
     {
         return $this->routes;
+    }
+
+
+    /**
+     * Cache in depository (required if wanna use named route)
+     *
+     * @return $this
+     */
+    public function cacheInDepository(): static
+    {
+        $this->depository->setResource($this->getRoutes());
+        return $this;
     }
 }

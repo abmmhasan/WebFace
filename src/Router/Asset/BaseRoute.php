@@ -5,12 +5,16 @@ namespace AbmmHasan\WebFace\Router\Asset;
 
 use AbmmHasan\WebFace\Request\Asset\URL;
 use AbmmHasan\WebFace\Response\Asset\HTTPResource;
-use AbmmHasan\WebFace\Response\Asset\ResponseDepot;
+use AbmmHasan\WebFace\Response\Asset\Repository;
+use AbmmHasan\WebFace\Response\Response;
 use Exception;
 
 abstract class BaseRoute
 {
     protected array $routes = [];
+    protected Depository $depository;
+    protected Repository $repository;
+    protected Response $response;
 
     protected array $baseRoute = [];
     protected string $name = '';
@@ -43,9 +47,14 @@ abstract class BaseRoute
 
     /**
      * Base Route Constructor
+     *
+     * @throws Exception
      */
     public function __construct()
     {
+        $this->depository = Depository::instance();
+        $this->repository = Repository::instance();
+        $this->response = Response::instance();
         Settings::$basePath = URL::instance()->get('base');
         Settings::$cookieDomain = URL::instance()->get('host');
     }
@@ -112,13 +121,14 @@ abstract class BaseRoute
             }
             $routeInfo['fn'] = $callback['uses'];
         }
-        $routeInfo['name'] ??= implode('.',
+        $routeInfo['pattern'] = implode('.',
             array_filter(
                 explode('/',
                     str_replace(array_merge(['{', '}'], $this->patternKeys), '', $pattern)
                 )
             )
         );
+        $routeInfo['name'] ??= $routeInfo['pattern'];
         foreach ($methods as $method) {
             $this->routes['named'][$routeInfo['name']] ??= [$method, $pattern];
             $this->routes['list'][] = $pattern;
@@ -164,39 +174,36 @@ abstract class BaseRoute
      */
     protected function handle(): bool
     {
-        if (ResponseDepot::getStatus() >= 300) {
-            goto unhandled;
-        }
-
         // Handle all routes (get URI after base rewrite, handles sub-directory)
         $uri = '/' . trim(substr(URL::instance()->get('path'), strlen(Settings::$basePath)), '/');
         $matched = $this->matchPattern($uri);
 
         // route exists?
         if ($matched === null) {
-            ResponseDepot::setStatus(404);
-            goto unhandled;
+            $this->response
+                ->status(404)
+                ->fail();
+            return false;
         }
 
         // method exists?
         $method = URL::instance()->getMethod('converted');
         if (!isset($matched[0][$method]) && !isset($matched[0]['ANY'])) {
-            ResponseDepot::setStatus(405);
-            goto unhandled;
+            $this->response
+                ->status(405)
+                ->fail();
+            return false;
         }
 
         $resource = $matched[0][$method] ?? $matched[0]['ANY'];
         $invoke = Invoke::instance();
-        RouteDepot::setCurrentRoute($method . ' ' . $uri);
+        $this->depository->setRoute($resource['pattern'], $uri, $method);
         if (!$this->routeMiddlewareCheck($resource['before'] ?? [], $this->globalMiddleware['route'])) {
-            goto unhandled;
+            return false;
         }
         $invoke->method($resource['fn'], $matched[1]);
         $invoke->middlewareGroup($resource['after'] ?? []);
         return true;
-
-        unhandled:
-        return false;
     }
 
     /**
@@ -283,11 +290,11 @@ abstract class BaseRoute
             );
             if ($eligible !== true) {
                 $status = $eligible['status'] ?? 403;
-                ResponseDepot::setStatus($status);
-                ResponseDepot::setContent([
-                    'status' => 'failed',
-                    'message' => $eligible['message'] ?? HTTPResource::$statusList[$status][1]
-                ]);
+                $this->response
+                    ->status($status)
+                    ->fail(
+                        $eligible['message'] ?? HTTPResource::$statusList[$status][1]
+                    );
                 return false;
             }
         }

@@ -5,8 +5,7 @@ namespace AbmmHasan\WebFace\Request\Asset;
 
 use AbmmHasan\Bucket\Functional\Arrject;
 use AbmmHasan\OOF\Fence\Single;
-use AbmmHasan\WebFace\Response\Asset\HTTPResource;
-use AbmmHasan\WebFace\Response\Asset\ResponseDepot;
+use AbmmHasan\WebFace\Response\Response;
 use Exception;
 
 final class CommonAsset
@@ -103,8 +102,9 @@ final class CommonAsset
                 $body = json_decode($rawBody, true);
             }
             if ($body === null) {
-                ResponseDepot::setStatus(415);
-                ResponseDepot::setContent(HTTPResource::$statusList[]);
+                Response::instance()
+                    ->status(415)
+                    ->fail();
                 responseFlush();
                 return null;
             }

@@ -6,16 +6,21 @@ namespace AbmmHasan\WebFace\Middleware;
 
 use AbmmHasan\WebFace\Request\Asset\Headers;
 use AbmmHasan\WebFace\Request\Asset\URL;
-use AbmmHasan\WebFace\Router\Asset\RouteDepot;
+use AbmmHasan\WebFace\Router\Asset\Depository;
 use AbmmHasan\WebFace\Router\Asset\Settings;
 use Exception;
 
 class PreTag
 {
     private array $asset;
+    protected Depository $depot;
 
+    /**
+     * @throws Exception
+     */
     public function __construct()
     {
+        $this->depot = Depository::instance();
         $this->loadAsset();
     }
 
@@ -41,6 +46,9 @@ class PreTag
         if (empty(Settings::$preTagFileLocation)) {
             throw new Exception("PreTag file location not defined!");
         }
+        if (!file_exists(Settings::$preTagFileLocation)) {
+            throw new Exception("Unable to locate PreTag file!");
+        }
         $this->setByPath($path, $tag);
         if (!empty($this->asset)) {
             return file_put_contents(Settings::$preTagFileLocation, json_encode($this->asset), LOCK_EX);
@@ -51,7 +59,7 @@ class PreTag
     /**
      * Populate asset from file
      */
-    private function loadAsset()
+    private function loadAsset(): void
     {
         if (file_exists(Settings::$preTagFileLocation)) {
             $this->asset = json_decode(file_get_contents(Settings::$preTagFileLocation), true);
@@ -67,7 +75,8 @@ class PreTag
      */
     private function setByPath($path, $tag): void
     {
-        $list = RouteDepot::getResource('list');
+        $list = Depository::instance()
+            ->getResource('list');
         if (empty($list) || !in_array($path, $list)) {
             throw new Exception("Route path '{$path}' invalid!");
         }
@@ -82,15 +91,14 @@ class PreTag
      */
     private function compareDependency(): array|bool
     {
-        $route = explode(" ", RouteDepot::getCurrentRoute(), 2);
-        if (!isset($this->asset[$route[1] ?? ''])) {
+        $signature = $this->depot->getSignature('uri');
+        if (!isset($this->asset[$signature])) {
             return true;
         }
         $dependencies = Headers::instance()->responseDependency();
-        $requestMethod = URL::instance()->getMethod('converted');
-        if (!empty($dependencies['if_none_match']) &&
-            in_array($requestMethod, ['GET', 'HEAD']) &&
-            in_array($this->asset[$route[1]], $dependencies['if_none_match'])) {
+        if (URL::instance()->getMethod('converted') === 'GET' &&
+            !empty($dependencies['if_none_match']) &&
+            in_array($this->asset[$signature], $dependencies['if_none_match'])) {
             return [
                 'code' => 304
             ];

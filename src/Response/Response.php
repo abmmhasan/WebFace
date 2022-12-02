@@ -2,44 +2,28 @@
 
 namespace AbmmHasan\WebFace\Response;
 
+use AbmmHasan\OOF\Fence\Single;
 use AbmmHasan\WebFace\Request\Asset\URL;
 use AbmmHasan\WebFace\Response\Asset\HTTPResource;
-use AbmmHasan\WebFace\Response\Asset\ResponseDepot;
+use AbmmHasan\WebFace\Response\Asset\Repository;
 use Exception;
 use InvalidArgumentException;
 
 class Response
 {
-    private static Response $instance;
+    private Repository $repository;
+
+    use Single;
 
     /**
      * Set default response date
      *
-     * @param string|array|null $content
-     * @param int $status
-     * @param array $headers
      * @throws Exception
      */
-    public function __construct(string|array $content = null, int $status = 200, array $headers = [])
+    public function __construct()
     {
         self::$instance ??= $this;
-        $this->status($status);
-        $this->withHeaders($headers);
-        ResponseDepot::setContent($content);
-    }
-
-    /**
-     * Get Class instance
-     *
-     * @param string|array|null $content
-     * @param int $status
-     * @param array $headers
-     * @return Response
-     * @throws Exception
-     */
-    public static function instance(string|array $content = null, int $status = 200, array $headers = []): Response
-    {
-        return self::$instance ??= new self($content, $status, $headers);
+        $this->repository = Repository::instance();
     }
 
     /**
@@ -50,7 +34,92 @@ class Response
      */
     public function status(int $code): Response
     {
-        ResponseDepot::setStatus($code);
+        $this->repository->setStatus($code);
+        return self::$instance;
+    }
+
+    /**
+     * Set content for success response
+     *
+     * @param mixed $data
+     * @param string|null $message
+     * @return Response
+     */
+    public function content(
+        mixed  $data,
+        string $message = null
+    ): Response
+    {
+        $this->repository->setContent('success', $message, $data);
+        return self::$instance;
+    }
+
+    /**
+     * Set content for success response
+     *
+     * @param mixed $data
+     * @param string|null $message
+     * @return Response
+     */
+    public function success(
+        mixed  $data,
+        string $message = null
+    ): Response
+    {
+        $this->repository->setContent('success', $message, $data);
+        return self::$instance;
+    }
+
+    /**
+     * Set content for failed response
+     *
+     * @param string|null $message
+     * @param mixed|null $data
+     * @return Response
+     */
+    public function fail(
+        string $message = null,
+        mixed  $data = null
+    ): Response
+    {
+        $this->repository->setContent('fail', $message, $data);
+        return self::$instance;
+    }
+
+    /**
+     * Set content for error response
+     *
+     * @param string|null $message
+     * @param mixed|null $data
+     * @param string|null $errorCode
+     * @return Response
+     */
+    public function error(
+        string $message = null,
+        mixed  $data = null,
+        string $errorCode = null
+    ): Response
+    {
+        $additional = [];
+        if (!empty($errorCode)) {
+            $additional['code'] = $errorCode;
+        }
+        $this->repository->setContent('error', $message, $data, $additional);
+        return self::$instance;
+    }
+
+    /**
+     * Set elements of content
+     *
+     * @param array|string $keys
+     * @param mixed|null $value
+     * @param string $parent
+     * @return Response
+     * @throws Exception
+     */
+    public function contentElement(array|string $keys, mixed $value = null, string $parent = 'data'): Response
+    {
+        $this->repository->setContentElement($keys, $value, $parent);
         return self::$instance;
     }
 
@@ -58,13 +127,13 @@ class Response
      * Set Header
      *
      * @param string $label
-     * @param string $value
+     * @param string|null $value
      * @param bool $append
      * @return Response
      */
-    public function header(string $label, string $value = '', bool $append = true): Response
+    public function header(string $label, ?string $value = null, bool $append = true): Response
     {
-        ResponseDepot::setHeader($label, $value, $append);
+        $this->repository->setHeader($label, $value, $append);
         return self::$instance;
     }
 
@@ -95,7 +164,7 @@ class Response
      */
     public function cacheControl(array $options): Response
     {
-        $controlCache = ResponseDepot::getCache('Cache-Control');
+        $controlCache = $this->repository->getCache('Cache-Control');
         foreach ($options as $item => $value) {
             if (isset(HTTPResource::$cacheControl[$value])) {
                 if (HTTPResource::$cacheControl[$value]) {
@@ -116,7 +185,7 @@ class Response
         if (isset($controlCache['private'])) {
             unset($controlCache['public']);
         }
-        ResponseDepot::setCache('Cache-Control', $controlCache);
+        $this->repository->setCache('Cache-Control', $controlCache);
         return self::$instance;
     }
 
@@ -133,7 +202,7 @@ class Response
      */
     public function vary(array $options): Response
     {
-        $vary = ResponseDepot::getCache('Vary');
+        $vary = $this->repository->getCache('Vary');
         if ($diff = array_diff(
             $options,
             [
@@ -153,24 +222,24 @@ class Response
                 sprintf("Vary header can't be used with the following options: '%s'.", implode('", "', $diff))
             );
         }
-        ResponseDepot::setCache('Vary', array_merge($vary, $options));
+        $this->repository->setCache('Vary', array_merge($vary, $options));
         return self::$instance;
     }
 
     /**
      * Set ETag
      *
-     * @param string $tag default:auto (will be calculated automatically if 'auto' is passed as value)
      * @param bool $isWeak
+     * @param string $tag default:auto (will be calculated automatically if 'auto' is passed as value)
      * @return Response
      */
-    public function eTag(string $tag = 'auto', bool $isWeak = true): Response
+    public function eTag(bool $isWeak = true, string $tag = 'auto'): Response
     {
         $tag = trim($tag);
         if (!str_starts_with($tag, '"')) {
             $tag = $this->prepareStringQuote($tag);
         }
-        ResponseDepot::setCache('ETag', ($isWeak ? "W/" : '') . $tag);
+        $this->repository->setCache('ETag', ($isWeak ? "W/" : '') . $tag);
         return self::$instance;
     }
 
@@ -183,7 +252,7 @@ class Response
      */
     public function lastModified(string $time): Response
     {
-        ResponseDepot::setCache('Last-Modified', httpDate($time));
+        $this->repository->setCache('Last-Modified', httpDate($time));
         return self::$instance;
     }
 
@@ -217,7 +286,7 @@ class Response
             }
         }
         foreach ($asset as $name => $value) {
-            ResponseDepot::setCookie($name, $value, $options);
+            $this->repository->setCookie($name, $value, $options);
         }
         return self::$instance;
     }
@@ -233,7 +302,7 @@ class Response
      */
     public function charset(string $charset): Response
     {
-        ResponseDepot::$charset = $charset;
+        $this->repository->$charset = $charset;
         return self::$instance;
     }
 

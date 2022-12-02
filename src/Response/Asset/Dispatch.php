@@ -3,11 +3,25 @@
 namespace AbmmHasan\WebFace\Response\Asset;
 
 use AbmmHasan\WebFace\Request\Asset\URL;
+use AbmmHasan\WebFace\Response\Response;
 use AbmmHasan\WebFace\Router\Asset\Settings;
 use Exception;
 
 final class Dispatch
 {
+
+    private Response $response;
+    private Repository $repository;
+
+    /**
+     * @throws Exception
+     */
+    public function __construct()
+    {
+        $this->response = Response::instance();
+        $this->repository = Repository::instance();
+    }
+
     /**
      * Dispatch response
      *
@@ -22,7 +36,7 @@ final class Dispatch
         $flushable = URL::instance()->getMethod('main') !== 'HEAD';
         $length = $this->content();
         if (!$flushable && !is_null($length)) {
-            ResponseDepot::setHeader('Content-Length', $length, false);
+            $this->response->header('Content-Length', $length, false);
         }
         $this->headers();
         $this->flushContent($flushable);
@@ -41,7 +55,7 @@ final class Dispatch
         }
 
         // Set Status Header
-        $responseCode = ResponseDepot::getStatus();
+        $responseCode = $this->repository->getStatus();
         header(
             "HTTP/" . HTTPResource::$responseVersion .
             " $responseCode " . HTTPResource::$statusList[$responseCode][0],
@@ -52,7 +66,7 @@ final class Dispatch
         $sendCookie = false;
 
         // headers
-        foreach (ResponseDepot::getHeader() as $name => $values) {
+        foreach ($this->repository->getHeader() as $name => $values) {
             $values = implode(',', $values);
             if ($replace = (0 === strcasecmp($name, 'Content-Type'))) {
                 $sendCookie = str_starts_with($values, 'Content-Type: text/');
@@ -62,12 +76,12 @@ final class Dispatch
 
         header('X-Powered-By: WebFace');
 
-        if ($responseCode >= 500 || $responseCode === 408) {
+        if ($responseCode === 408 || $responseCode >= 500) {
             header('Connection: close');
         }
 
         // Set Cookies (if text type response)
-        if ($sendCookie && !!($responseCookies = ResponseDepot::getCookie())) {
+        if ($sendCookie && !!($responseCookies = $this->repository->getCookie())) {
             $expire = time() + (Settings::$cookieLifetime * 60);
             $url = URL::instance();
             $domain = Settings::$cookieDomain ?? $url->get('host');
@@ -117,10 +131,10 @@ final class Dispatch
     private function content(): bool|int|null
     {
         $length = null;
-        if (!empty(ResponseDepot::getContent())) {
+        if (!empty($this->repository->getContent())) {
             ob_start();
             ob_start("ob_gzhandler");
-            echo ResponseDepot::getContent();
+            echo $this->repository->getContent();
             ob_get_flush();
             $length = ob_get_length();
             ob_get_flush();
