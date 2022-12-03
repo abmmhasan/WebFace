@@ -31,7 +31,7 @@ final class Dispatch
     public function hello(): void
     {
         $prepare = Prepare::instance();
-        $prepare->contentAndCache();
+        $prepare->manageContentAndHeader();
         $prepare->cacheHeader();
         $flushable = URL::instance()->getMethod('main') !== 'HEAD';
         $length = $this->content();
@@ -74,7 +74,7 @@ final class Dispatch
             header("$name: $values", $replace);
         }
 
-        header('X-Powered-By: WebFace');
+        header('X-Powered-By: ' . trim(Settings::$poweredBy));
 
         if ($responseCode === 408 || $responseCode >= 500) {
             header('Connection: close');

@@ -177,11 +177,14 @@ class Repository
      */
     public function setCache(array|string $header, string|array|null $value = null): void
     {
-        if (is_array($header) && empty($value)) {
+        if (is_array($header)) {
             $this->cacheHeader = $header;
-        } elseif (is_string($header)) {
-            $this->cacheHeader[$header] = $value;
+            return;
         }
+        if ($value === null) {
+            unset($this->cacheHeader[$header]);
+        }
+        $this->cacheHeader[$header] = $value;
     }
 
     /**

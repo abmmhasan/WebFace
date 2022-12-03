@@ -6,6 +6,7 @@ use AbmmHasan\OOF\Fence\Single;
 use AbmmHasan\WebFace\Request\Asset\Headers;
 use AbmmHasan\WebFace\Request\Asset\URL;
 use AbmmHasan\WebFace\Response\Response;
+use AbmmHasan\WebFace\Router\Asset\Depository;
 use AbmmHasan\WebFace\Router\Asset\Settings;
 use Exception;
 
@@ -14,6 +15,7 @@ final class Prepare
     use Single;
 
     private Repository $repository;
+    private Depository $depository;
     private Response $response;
 
     private array $applicableStatus = [
@@ -58,6 +60,7 @@ final class Prepare
     public function __construct()
     {
         $this->repository = Repository::instance();
+        $this->depository = Depository::instance();
         $this->response = Response::instance();
     }
 
@@ -100,8 +103,11 @@ final class Prepare
      * @return void
      * @throws Exception
      */
-    public function contentAndCache(): void
+    public function manageContentAndHeader(): void
     {
+        $this->response->header('X-Request-Signature', $this->depository->getSignature('uuid'), false);
+        $this->response->header('X-Route-Id', $this->depository->getSignature('uri'), false);
+
         $content = $this->contentParser($this->repository->getContent());
 
         // check & set content type
@@ -289,8 +295,8 @@ final class Prepare
         $responseCode = $this->repository->getStatus();
         if (isset($this->noContentEligible[$responseCode])) {
             $this->repository->setRawContent();
-            $this->response->header('Content-Type', '', false);
-            $this->response->header('Content-Length', '', false);
+            $this->response->header('Content-Type', null, false);
+            $this->response->header('Content-Length', null, false);
             ini_set('default_mimetype', '');
             if ($responseCode === 304) {
                 foreach (
@@ -298,12 +304,13 @@ final class Prepare
                         'Allow',
                         'Content-Encoding',
                         'Content-Language',
-                        'Content-MD5',
-                        'Last-Modified'
+                        'Content-MD5'
                     ] as $header
                 ) {
                     $this->response->header($header, null, false);
                 }
+                $this->repository->setCache('Last-Modified');
+                $this->repository->setCache('ETag');
             }
             return true;
         }

@@ -91,19 +91,41 @@ class PreTag
      */
     private function compareDependency(): array|bool
     {
+        if (URL::instance()->getMethod('converted') !== 'GET') {
+            return true;
+        }
         $signature = $this->depot->getSignature('uri');
         if (!isset($this->asset[$signature])) {
             return true;
         }
-        $dependencies = Headers::instance()->responseDependency();
-        if (URL::instance()->getMethod('converted') === 'GET' &&
-            !empty($dependencies['if_none_match']) &&
-            in_array($this->asset[$signature], $dependencies['if_none_match'])) {
+        if ($this->checkIfEligible(
+            Headers::instance()->responseDependency(),
+            $this->asset[$signature]
+        )) {
             return [
-                'code' => 304
+                'status' => 304
             ];
         }
         return true;
     }
 
+    /**
+     * Eligible as being not modified?
+     *
+     * @param $dependencies
+     * @param $stamp
+     * @return bool
+     */
+    private function checkIfEligible($dependencies, $stamp): bool
+    {
+        if ($dependencies['if_modified_since'] !== null &&
+            in_array($stamp, $dependencies['if_modified_since'])) {
+            return true;
+        }
+        if ($dependencies['if_none_match'] !== [] &&
+            in_array($stamp, $dependencies['if_none_match'])) {
+            return true;
+        }
+        return false;
+    }
 }

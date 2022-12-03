@@ -7,6 +7,13 @@ namespace AbmmHasan\WebFace\Router\Asset;
 final class Settings
 {
     /**
+     * The content to send as X-Powered-By
+     *
+     * @var string
+     */
+    public static string $poweredBy = 'WebFace';
+
+    /**
      * Route node (indicates server identity; if multiple server)
      *
      * @var string|null
