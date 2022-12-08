@@ -273,7 +273,7 @@ final class Prepare
             $headers = Headers::instance();
             $modifiedSince = $headers->responseDependency('if_modified_since');
             if ($modifiedSince && $lastModified) {
-                $notModified = strtotime($modifiedSince) >= strtotime($lastModified);
+                $notModified = $modifiedSince >= strtotime($lastModified);
             }
             if (!$notModified && !empty($noneMatch = $headers->responseDependency('if_none_match'))) {
                 $notModified = !!array_intersect($noneMatch, [$cacheHeaders['ETag'] ?? '*', '*']);

@@ -10,10 +10,7 @@ use Opis\Closure\SerializableClosure;
 
 final class RouteDepot
 {
-    private static string $routeInOperation = '/';
     private static mixed $routeResource;
-    private static array $cachedRouteResource;
-    private static int $routeSignature;
 
     /**
      * Prepare and cache route
@@ -32,27 +29,6 @@ final class RouteDepot
     }
 
     /**
-     * Get route resource
-     *
-     * @param $key
-     * @return mixed
-     */
-    public static function getResource($key): mixed
-    {
-        return self::$cachedRouteResource[$key] ?? null;
-    }
-
-    /**
-     * Get route resource
-     *
-     * @param array $resource
-     */
-    public static function setResource(array $resource): void
-    {
-        self::$cachedRouteResource = $resource;
-    }
-
-    /**
      * Prepare route resources
      */
     private static function prepareRoute(): void
@@ -67,39 +43,7 @@ final class RouteDepot
     }
 
     /**
-     * Set active route
-     *
-     * @param string $pattern
-     * @param string|null $route
-     */
-    public static function setCurrentRoute(string $pattern, string $route = null): void
-    {
-        self::$routeInOperation = $pattern;
-        self::$routeSignature = crc32($route ?? $pattern);
-    }
-
-    /**
-     * Get active route
-     *
-     * @return string
-     */
-    public static function getCurrentRoute(): string
-    {
-        return self::$routeInOperation;
-    }
-
-    /**
-     * Get active route
-     *
-     * @return string
-     */
-    public static function getCurrentRouteSignature(): string
-    {
-        return self::$routeSignature;
-    }
-
-    /**
-     * Removing closure as it is not supported in export
+     * Resource parser
      *
      * @param $content
      * @return array

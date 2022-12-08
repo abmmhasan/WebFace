@@ -87,6 +87,12 @@ final class URL
         return $this->find($this->method, $key);
     }
 
+    /**
+     * Get scheme
+     *
+     * @return string
+     * @throws Exception
+     */
     private function getScheme(): string
     {
         $server = CommonAsset::instance()->server();

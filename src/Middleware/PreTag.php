@@ -94,10 +94,12 @@ class PreTag
         if (URL::instance()->getMethod('converted') !== 'GET') {
             return true;
         }
+
         $signature = $this->depot->getSignature('uri');
         if (!isset($this->asset[$signature])) {
             return true;
         }
+
         if ($this->checkIfEligible(
             Headers::instance()->responseDependency(),
             $this->asset[$signature]
@@ -106,6 +108,7 @@ class PreTag
                 'status' => 304
             ];
         }
+
         return true;
     }
 
@@ -119,13 +122,15 @@ class PreTag
     private function checkIfEligible($dependencies, $stamp): bool
     {
         if ($dependencies['if_modified_since'] !== null &&
-            in_array($stamp, $dependencies['if_modified_since'])) {
+            $dependencies['if_modified_since'] >= $stamp) {
             return true;
         }
+
         if ($dependencies['if_none_match'] !== [] &&
-            in_array($stamp, $dependencies['if_none_match'])) {
+            array_intersect($dependencies['if_none_match'], [$stamp ?: '*', '*'])) {
             return true;
         }
+
         return false;
     }
 }

@@ -160,9 +160,9 @@ final class Headers
                     PREG_SPLIT_NO_EMPTY
                 ),
                 'if_modified_since' => !empty($this->headers['If-Modified-Since']) ?
-                    date(DATE_ATOM, strtotime($this->headers['If-Modified-Since'])) : null,
+                    strtotime($this->headers['If-Modified-Since']) : null,
                 'if_unmodified_since' => !empty($this->headers['If-Unmodified-Since']) ?
-                    date(DATE_ATOM, strtotime($this->headers['If-Unmodified-Since'])) : null,
+                    strtotime($this->headers['If-Unmodified-Since']) : null,
                 'range' => null,
                 'prefer_safe' => ($this->headers['Prefer'] ?? '') === 'safe' && URL::instance()->get('scheme') === 'https'
             ];
