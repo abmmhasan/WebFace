@@ -50,7 +50,8 @@ final class Headers
 
                 if (null !== $authorizationHeader) {
                     if (0 === stripos($authorizationHeader, 'basic ')) {
-                        // Decode AUTHORIZATION header into PHP_AUTH_USER and PHP_AUTH_PW when authorization header is basic
+                        // Decode AUTHORIZATION header into PHP_AUTH_USER and
+                        // PHP_AUTH_PW when authorization header is basic
                         $exploded = explode(':', base64_decode(substr($authorizationHeader, 6)), 2);
                         if (2 == count($exploded)) {
                             list($headerVar['PHP_AUTH_USER'], $headerVar['PHP_AUTH_PW']) = $exploded;
@@ -164,7 +165,8 @@ final class Headers
                 'if_unmodified_since' => !empty($this->headers['If-Unmodified-Since']) ?
                     strtotime($this->headers['If-Unmodified-Since']) : null,
                 'range' => null,
-                'prefer_safe' => ($this->headers['Prefer'] ?? '') === 'safe' && URL::instance()->get('scheme') === 'https'
+                'prefer_safe' => ($this->headers['Prefer'] ?? '') === 'safe' &&
+                    URL::instance()->get('scheme') === 'https'
             ];
             if (isset($this->headers['Range'])) {
                 $range = explode('=', strtr($this->headers['Range'], " ", ""), 2);

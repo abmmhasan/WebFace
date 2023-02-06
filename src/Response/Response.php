@@ -190,6 +190,25 @@ class Response
     }
 
     /**
+     * Set Content Security Policy
+     *
+     * Understanding: https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
+     * Setup: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
+     *
+     * @param string $policies
+     * @return Response
+     * @throws Exception
+     */
+    public function setCSP(string $policies = 'default'): Response
+    {
+        if ($policies === 'default') {
+            $policies = "default-src '" . rtrim(URL::instance()->get('prefix'), '/') . "'";
+        }
+        $this->header('Content-Security-Policy', $policies, false);
+        return self::$instance;
+    }
+
+    /**
      * Vary Header
      *
      * Easy Understanding: https://www.keycdn.com/support/vary-header

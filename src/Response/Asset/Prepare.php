@@ -105,21 +105,19 @@ final class Prepare
      */
     public function manageContentAndHeader(): void
     {
-        $this->response->header('X-Request-Signature', $this->depository->getSignature('uuid'), false);
+        $this->response->header('X-Process-Signature', $this->depository->getSignature('uuid'), false);
         $this->response->header('X-Route-Id', $this->depository->getSignature('uri'), false);
+
+        if (Settings::$enableHSTS) {
+            $this->response->header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload', false);
+        }
 
         $content = $this->contentParser($this->repository->getContent());
 
         // check & set content type
         $contentType = $this->repository->getHeader('Content-Type');
         if ($contentType === null) {
-//            $applicable = array_intersect(ResponseDepot::$applicableFormat, (array)Headers::instance()->content('type'));
-            if (!empty($applicable)) {
-                $this->response->header('Content-Type', current($applicable), false);
-            } else {
-                $charset = $this->repository->getCharset() ?? 'UTF-8';
-                $this->response->header('Content-Type', 'text/html; charset=' . $charset, false);
-            }
+            $this->response->header('Content-Type', 'text/html; charset=' . ($this->repository->getCharset() ?? 'UTF-8'), false);
         }
 
         if ($this->repository->getStatus() < 300 &&
@@ -137,8 +135,11 @@ final class Prepare
             return;
         }
 
-        $this->calculateEtag($content);
-        $this->shouldMarkAsModified();
+        if ($this->repository->getStatus() < 300) {
+            $this->calculateEtag($content);
+            $this->shouldMarkAsModified();
+        }
+
         if ($this->empty()) {
             return;
         }

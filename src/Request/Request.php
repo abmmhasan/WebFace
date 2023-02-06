@@ -29,7 +29,6 @@ use Exception;
 class Request extends BaseRequest
 {
     /**
-     *
      * Read-only access to property objects.
      *
      * @param string $key The name of the property object to read.

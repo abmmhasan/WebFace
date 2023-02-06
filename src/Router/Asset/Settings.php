@@ -14,6 +14,18 @@ final class Settings
     public static string $poweredBy = 'WebFace';
 
     /**
+     * Enable HSTS (permanent https redirect)
+     *  Note:
+     *      subdomain will be signed as well
+     *      Sign for a year and onwards
+     *
+     * Understanding: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security
+     *
+     * @var bool
+     */
+    public static bool $enableHSTS = true;
+
+    /**
      * Route node (indicates server identity; if multiple server)
      *
      * @var string|null
