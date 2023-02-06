@@ -9,7 +9,7 @@ use AbmmHasan\WebFace\Response\Asset\HTTPResource;
 use Closure;
 use Exception;
 
-use http\Exception\InvalidArgumentException;
+use InvalidArgumentException;
 use ReflectionException;
 
 use function unserialize;
