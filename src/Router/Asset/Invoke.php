@@ -33,24 +33,23 @@ final class Invoke
             is_array($fn) =>
             container()
                 ->registerMethod($fn[0], $fn[1], $params)
-                ->get($fn[0]),
+                ->call($fn[0])['returned'],
 
             $fn instanceof Closure =>
             container()
                 ->registerClosure('wf', $fn, $params)
-                ->get('wf'),
+                ->call('wf'),
 
             is_string($fn) => match (true) {
                 is_callable($fn, false, $callableName) =>
                 container()
                     ->registerClosure($callableName, $fn, $params)
-                    ->get($callableName),
+                    ->call($callableName),
 
                 str_starts_with($fn, 'C:32:"Opis\\Closure\\SerializableClosure') =>
                 container()
                     ->registerClosure('wf', unserialize($fn)->getClosure(), $params)
-                    ->get('wf')
-                    ->returned,
+                    ->call('wf'),
 
                 default => throw new InvalidArgumentException('Unknown invoke formation!')
             },
@@ -58,11 +57,8 @@ final class Invoke
             default => throw new InvalidArgumentException('Unknown invoke formation!')
         };
         ob_end_clean();
-        if (!empty($status)) {
-            $status = intval($status);
-            if (isset(HTTPResource::$statusList[$status])) {
-                return $status;
-            }
+        if (is_int($status) && isset(HTTPResource::$statusList[$status])) {
+            return $status;
         }
         return null;
     }
@@ -82,13 +78,11 @@ final class Invoke
             $signature = trim(base64_encode(random_bytes(5)), '=');
             return container()
                 ->registerClosure($signature, $fn, $params)
-                ->call($signature)
-                ->returned;
+                ->call($signature);
         }
         return container()
             ->registerMethod($fn, Settings::$middlewareCallMethod, $params)
-            ->call($fn)
-            ->returned;
+            ->call($fn)['returned'];
     }
 
     /**
