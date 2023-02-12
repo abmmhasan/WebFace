@@ -33,23 +33,23 @@ final class Invoke
             is_array($fn) =>
             container()
                 ->registerMethod($fn[0], $fn[1], $params)
-                ->call($fn[0])['returned'],
+                ->getReturn($fn[0]),
 
             $fn instanceof Closure =>
             container()
                 ->registerClosure('wf', $fn, $params)
-                ->call('wf'),
+                ->getReturn('wf'),
 
             is_string($fn) => match (true) {
                 is_callable($fn, false, $callableName) =>
                 container()
                     ->registerClosure($callableName, $fn, $params)
-                    ->call($callableName),
+                    ->getReturn($callableName),
 
                 str_starts_with($fn, 'C:32:"Opis\\Closure\\SerializableClosure') =>
                 container()
                     ->registerClosure('wf', unserialize($fn)->getClosure(), $params)
-                    ->call('wf'),
+                    ->getReturn('wf'),
 
                 default => throw new InvalidArgumentException('Unknown invoke formation!')
             },
@@ -78,11 +78,11 @@ final class Invoke
             $signature = trim(base64_encode(random_bytes(5)), '=');
             return container()
                 ->registerClosure($signature, $fn, $params)
-                ->call($signature);
+                ->getReturn($signature);
         }
         return container()
             ->registerMethod($fn, Settings::$middlewareCallMethod, $params)
-            ->call($fn)['returned'];
+            ->getReturn($fn);
     }
 
     /**
