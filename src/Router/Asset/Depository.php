@@ -2,7 +2,7 @@
 
 namespace AbmmHasan\WebFace\Router\Asset;
 
-use AbmmHasan\OOF\Fence\Single;
+use AbmmHasan\InterMix\Fence\Single;
 use AbmmHasan\Uuid;
 use Exception;
 

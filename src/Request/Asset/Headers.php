@@ -3,7 +3,7 @@
 namespace AbmmHasan\WebFace\Request\Asset;
 
 use AbmmHasan\Bucket\Functional\Arrject;
-use AbmmHasan\OOF\Fence\Single;
+use AbmmHasan\InterMix\Fence\Single;
 use Exception;
 
 final class Headers

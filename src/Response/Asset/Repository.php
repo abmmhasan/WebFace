@@ -3,7 +3,7 @@
 namespace AbmmHasan\WebFace\Response\Asset;
 
 use AbmmHasan\Bucket\Array\Dotted;
-use AbmmHasan\OOF\Fence\Single;
+use AbmmHasan\InterMix\Fence\Single;
 use Exception;
 use InvalidArgumentException;
 

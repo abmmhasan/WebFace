@@ -2,7 +2,7 @@
 
 namespace AbmmHasan\WebFace\Response;
 
-use AbmmHasan\OOF\Fence\Single;
+use AbmmHasan\InterMix\Fence\Single;
 use AbmmHasan\WebFace\Request\Asset\URL;
 use AbmmHasan\WebFace\Response\Asset\HTTPResource;
 use AbmmHasan\WebFace\Response\Asset\Repository;
