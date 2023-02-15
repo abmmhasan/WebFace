@@ -29,10 +29,10 @@
     "php": ">=8.0",
     "ext-json": "*",
     "ext-mbstring": "*",
-    "abmmhasan/oof": "dev-main",
     "abmmhasan/bucket": "dev-main",
     "opis/json-schema": "^2.3",
     "opis/closure": "^3.6",
-    "abmmhasan/uuid": "^1.0"
+    "abmmhasan/uuid": "^1.0",
+    "abmmhasan/intermix": "dev-main"
   }
 }
