@@ -8,10 +8,10 @@ use AbmmHasan\InterMix\Fence\Single;
 use AbmmHasan\WebFace\Response\Asset\HTTPResource;
 use Closure;
 use Exception;
-
 use InvalidArgumentException;
 use ReflectionException;
 
+use function AbmmHasan\InterMix\container;
 use function unserialize;
 
 final class Invoke
@@ -64,6 +64,23 @@ final class Invoke
     }
 
     /**
+     * Execute middleware group
+     *
+     * @param array $resource
+     * @param string $params
+     * @return void
+     * @throws Exception
+     */
+    public function middlewareGroup(array $resource, string $params = ''): void
+    {
+        if ($resource !== []) {
+            foreach ($resource as $execute) {
+                $this->middleware($execute, $params);
+            }
+        }
+    }
+
+    /**
      * Invoke middleware
      *
      * @param $fn
@@ -83,22 +100,5 @@ final class Invoke
         return container()
             ->registerMethod($fn, Settings::$middlewareCallMethod, $params)
             ->getReturn($fn);
-    }
-
-    /**
-     * Execute middleware group
-     *
-     * @param array $resource
-     * @param string $params
-     * @return void
-     * @throws Exception
-     */
-    public function middlewareGroup(array $resource, string $params = ''): void
-    {
-        if ($resource !== []) {
-            foreach ($resource as $execute) {
-                $this->middleware($execute, $params);
-            }
-        }
     }
 }
